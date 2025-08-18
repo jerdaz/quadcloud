@@ -8,13 +8,15 @@ const URLs = [
   'https://xbox.com/play'
 ];
 
-function createView(x, y, width, height, index) {
+const SPOOF_FOCUS = [true, true, true, true];
+
+function createView(x, y, width, height, index, spoofFocus = true) {
   const viewSession = session.fromPartition(`persist:player${index}`);
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
       preload: path.join(__dirname, 'preload.js'),
-      additionalArguments: [`--controllerIndex=${index}`]
+      additionalArguments: [`--controllerIndex=${index}`, `--spoofFocus=${spoofFocus}`]
     }
   });
   view.setBounds({ x, y, width, height });
@@ -46,7 +48,7 @@ function createWindow() {
     { x: viewWidth, y: viewHeight }
   ];
   positions.forEach((pos, i) => {
-    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i);
+    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, SPOOF_FOCUS[i]);
     win.addBrowserView(view);
     views[i] = view;
   });
