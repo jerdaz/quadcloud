@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
 const path = require('path');
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -63,6 +63,105 @@ const XFOCUS_PATCH = `
 })()
 `;
 
+// --- Gamepad isolatie in MAIN WORLD (per kwadrant) ---
+function makeGamepadPatch(slot /* number 0..3 */, pinnedId /* string|null */) {
+  // embed slot & id als literals
+  const SLOT = Number(slot) | 0;
+  const ID   = pinnedId ? String(pinnedId).replace(/`/g, "\\`") : null;
+
+  return `
+  (() => {
+    const nativeGetGamepads = navigator.getGamepads.bind(navigator);
+    const slot = ${SLOT};
+    const pinnedId = ${ID === null ? 'null' : '`' + ID + '`'};
+
+    function choosePad() {
+      const pads = Array.from(nativeGetGamepads());
+      if (pinnedId) {
+        const byId = pads.find(p => p && p.id === pinnedId);
+        return byId || null;
+      }
+      return pads[slot] || null;
+    }
+
+    function proxyGamepad(gp) {
+      if (!gp) return null;
+      return new Proxy(gp, {
+        get(t, p, r) { return p === 'index' ? 0 : Reflect.get(t, p, r); }
+      });
+    }
+
+    function filteredPadsArray() {
+      const chosen = choosePad();
+      const out = [null, null, null, null];
+      if (chosen) out[0] = proxyGamepad(chosen);
+      return out;
+    }
+
+    // Override getGamepads in MAIN WORLD
+    try {
+      Object.defineProperty(navigator, 'getGamepads', {
+        configurable: false,
+        enumerable: true,
+        value: () => filteredPadsArray()
+      });
+    } catch {}
+
+    // Filter connect/disconnect events
+    const wAdd = window.addEventListener.bind(window);
+    window.addEventListener = function(type, listener, opts) {
+      if (type === 'gamepadconnected' || type === 'gamepaddisconnected') {
+        const wrapped = (ev) => {
+          const gp = ev && ev.gamepad;
+          if (!gp) return;
+          const match = pinnedId ? (gp.id === pinnedId) : (gp.index === slot);
+          if (!match) return;
+          const proxEv = new Proxy(ev, {
+            get(t, p, r) { return (p === 'gamepad') ? proxyGamepad(gp) : Reflect.get(t, p, r); }
+          });
+          try { listener(proxEv); } catch {}
+        };
+        return wAdd(type, wrapped, opts);
+      }
+      return wAdd(type, listener, opts);
+    };
+
+    // Debug (optioneel): laat zien wat de pagina straks ziet
+    // setTimeout(() => console.debug('[QuadCloud mainworld]', location.href, navigator.getGamepads().map(p=>p&&{id:p.id,idx:p.index})), 500);
+  })();
+  `;
+}
+
+function installGamepadIsolation(webContents, slot, pinnedId = null) {
+  const code = makeGamepadPatch(slot, pinnedId);
+
+  function injectFrame(frame) {
+    try { return frame.executeJavaScript(code, true); } catch {}
+  }
+
+  function injectAllFrames() {
+    try {
+      const mf = webContents.mainFrame;
+      injectFrame(mf);
+      for (const f of mf.frames) injectFrame(f);
+    } catch {}
+  }
+
+  // Eerste keer zodra DOM klaar is
+  webContents.on('dom-ready', injectAllFrames);
+
+  // Op nieuwe frames
+  webContents.on('frame-created', (_e, details) => {
+    try { injectFrame(details.frame); } catch {}
+  });
+
+  // Op elke (sub)frame navigatie
+  webContents.on('did-frame-navigate', injectAllFrames);
+
+  // Ook bij start navigatie nog eens
+  webContents.on('did-start-navigation', injectAllFrames);
+}
+
 function injectPatchIntoFrame(frame) {
   try {
     const url = frame.url || '';
@@ -118,18 +217,13 @@ function createView(x, y, width, height, index) {
       preload: path.join(__dirname, 'preload.js')
     }
   });
-  view.webContents.controllerIndex = index;
   view.setBounds({ x, y, width, height });
-  installXcloudFocusWorkaround(view.webContents);
+  view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   view.webContents.loadURL(URLs[index]);
   return view;
 }
 
 const views = [];
-
-ipcMain.on('get-controller-index', (event) => {
-  event.returnValue = event.sender.controllerIndex || 0;
-});
 
 function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
@@ -155,6 +249,8 @@ function createWindow() {
   positions.forEach((pos, i) => {
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i);
     win.addBrowserView(view);
+    installXcloudFocusWorkaround(view.webContents);
+    installGamepadIsolation(view.webContents, i);
     views[i] = view;
   });
   views[0].webContents.focus();
