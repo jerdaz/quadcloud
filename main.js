@@ -23,7 +23,9 @@ function createView(x, y, width, height, index) {
 }
 
 function createWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  // Use the full display size instead of the work area to avoid leaving
+  // a blank space where the taskbar would normally be.
+  const { width, height } = screen.getPrimaryDisplay().size;
   const win = new BrowserWindow({ fullscreen: true, frame: false, autoHideMenuBar: true });
   const viewWidth = Math.floor(width / 2);
   const viewHeight = Math.floor(height / 2);
