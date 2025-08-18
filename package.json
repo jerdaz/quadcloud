@@ -1,0 +1,16 @@
+{
+  "name": "quad-play",
+  "version": "1.0.0",
+  "description": "Electron app that splits a 4K display into four xCloud sessions with dedicated controllers.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"No tests\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^37.3.0"
+  }
+}
