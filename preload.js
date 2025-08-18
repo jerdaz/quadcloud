@@ -1,5 +1,5 @@
-const params = new URLSearchParams(global.process.argv.slice(1).join('&'));
-const myIndex = Number(params.get('controllerIndex') || 0);
+const arg = global.process.argv.find(a => a.startsWith('--controllerIndex='));
+const myIndex = arg ? Number(arg.split('=')[1]) : 0;
 
 const nativeGetGamepads = navigator.getGamepads.bind(navigator);
 
@@ -14,4 +14,24 @@ window.addEventListener('gamepadconnected', ev => {
 
 window.addEventListener('gamepaddisconnected', ev => {
   if (ev.gamepad.index !== myIndex) ev.stopImmediatePropagation();
+});
+
+let hideCursorTimeout;
+
+function resetCursorTimeout() {
+  const body = document.body;
+  if (!body) return;
+  body.style.cursor = '';
+  clearTimeout(hideCursorTimeout);
+  hideCursorTimeout = setTimeout(() => {
+    body.style.cursor = 'none';
+  }, 5000);
+}
+
+window.addEventListener('mousemove', resetCursorTimeout);
+window.addEventListener('mousedown', resetCursorTimeout);
+window.addEventListener('keydown', resetCursorTimeout);
+
+window.addEventListener('DOMContentLoaded', () => {
+  resetCursorTimeout();
 });
