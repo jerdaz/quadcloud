@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -115,10 +115,10 @@ function createView(x, y, width, height, index) {
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
-      preload: path.join(__dirname, 'preload.js'),
-      additionalArguments: [`--controllerIndex=${index}`]
+      preload: path.join(__dirname, 'preload.js')
     }
   });
+  view.webContents.controllerIndex = index;
   view.setBounds({ x, y, width, height });
   installXcloudFocusWorkaround(view.webContents);
   view.webContents.loadURL(URLs[index]);
@@ -126,6 +126,10 @@ function createView(x, y, width, height, index) {
 }
 
 const views = [];
+
+ipcMain.on('get-controller-index', (event) => {
+  event.returnValue = event.sender.controllerIndex || 0;
+});
 
 function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
