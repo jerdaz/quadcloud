@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, session } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen } = require('electron');
 const path = require('path');
 
 const URLs = [
@@ -8,7 +8,7 @@ const URLs = [
   'https://xbox.com/play'
 ];
 
-function createView(x, y, index) {
+function createView(x, y, width, height, index) {
   const viewSession = session.fromPartition(`persist:player${index}`);
   const view = new BrowserView({
     webPreferences: {
@@ -17,21 +17,24 @@ function createView(x, y, index) {
       additionalArguments: [`--controllerIndex=${index}`]
     }
   });
-  view.setBounds({ x, y, width: 1920, height: 1080 });
+  view.setBounds({ x, y, width, height });
   view.webContents.loadURL(URLs[index]);
   return view;
 }
 
 function createWindow() {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const win = new BrowserWindow({ fullscreen: true, frame: false, autoHideMenuBar: true });
+  const viewWidth = Math.floor(width / 2);
+  const viewHeight = Math.floor(height / 2);
   const positions = [
-    { x: 0,    y: 0 },
-    { x: 1920, y: 0 },
-    { x: 0,    y: 1080 },
-    { x: 1920, y: 1080 }
+    { x: 0,         y: 0 },
+    { x: viewWidth, y: 0 },
+    { x: 0,         y: viewHeight },
+    { x: viewWidth, y: viewHeight }
   ];
   positions.forEach((pos, i) => {
-    const view = createView(pos.x, pos.y, i);
+    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i);
     win.addBrowserView(view);
   });
 }
