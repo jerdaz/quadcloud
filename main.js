@@ -78,7 +78,7 @@ function createWindow() {
     view.setAutoResize({ width: true, height: true });
 
     // Minimalistische launcher per quadrant
-    const launcherUrl = new URL(`file://${path.join(__dirname, 'renderer', 'index.html')}`);
+    const launcherUrl = new URL(URL_DEFAULT);
     launcherUrl.searchParams.set('q', String(i + 1));
     launcherUrl.searchParams.set('default', URL_DEFAULT);
     view.webContents.loadURL(launcherUrl.toString());
