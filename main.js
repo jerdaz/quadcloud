@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
 const path = require('path');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
@@ -109,6 +109,74 @@ function installXcloudFocusWorkaround(wc) {
   });
 }
 
+function getGamepadPatch(index) {
+  return `
+(() => {
+  const myIndex = ${index};
+  const nativeGetGamepads = navigator.getGamepads.bind(navigator);
+  navigator.getGamepads = () => {
+    const gamepads = nativeGetGamepads();
+    const result = [null, null, null, null];
+    const pad = gamepads[myIndex];
+    if (pad) {
+      const proxied = new Proxy(pad, {
+        get(target, prop) {
+          return prop === 'index' ? 0 : target[prop];
+        }
+      });
+      result[0] = proxied;
+    }
+    return result;
+  };
+  window.addEventListener('gamepadconnected', ev => {
+    if (ev.gamepad.index !== myIndex) {
+      ev.stopImmediatePropagation();
+    } else {
+      try { Object.defineProperty(ev.gamepad, 'index', { value: 0 }); } catch {}
+    }
+  });
+  window.addEventListener('gamepaddisconnected', ev => {
+    if (ev.gamepad.index !== myIndex) {
+      ev.stopImmediatePropagation();
+    } else {
+      try { Object.defineProperty(ev.gamepad, 'index', { value: 0 }); } catch {}
+    }
+  });
+})()`;
+}
+
+function injectGamepadPatchIntoFrame(frame, index) {
+  try { frame.executeJavaScript(getGamepadPatch(index), true); } catch {}
+}
+
+function installGamepadIsolation(wc, index) {
+  wc.on('dom-ready', () => {
+    try {
+      const mf = wc.mainFrame;
+      injectGamepadPatchIntoFrame(mf, index);
+      for (const f of mf.frames) injectGamepadPatchIntoFrame(f, index);
+    } catch {}
+  });
+
+  wc.on('did-frame-navigate', (_e, details) => {
+    try {
+      const f = wc.mainFrame.frames.find(fr => fr.frameTreeNodeId === details.frameTreeNodeId);
+      if (f) injectGamepadPatchIntoFrame(f, index);
+    } catch {}
+  });
+
+  wc.on('frame-created', (_e, details) => {
+    try { injectGamepadPatchIntoFrame(details.frame, index); } catch {}
+  });
+
+  wc.on('did-start-navigation', () => {
+    try {
+      const mf = wc.mainFrame;
+      injectGamepadPatchIntoFrame(mf, index);
+    } catch {}
+  });
+}
+
 const URLs = [
   'https://xbox.com/play',
   'https://xbox.com/play',
@@ -129,15 +197,12 @@ function createView(x, y, width, height, index) {
   view.setAutoResize({ width: true, height: true });
   view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
+  installGamepadIsolation(view.webContents, index);
   view.webContents.loadURL(URLs[index]);
   return view;
 }
 
 const views = [];
-
-ipcMain.on('get-controller-index', (event) => {
-  event.returnValue = event.sender.controllerIndex || 0;
-});
 
 function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
