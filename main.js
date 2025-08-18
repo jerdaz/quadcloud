@@ -62,82 +62,69 @@ const XFOCUS_PATCH = `
 `;
 
 // --- Gamepad isolatie in MAIN WORLD (per kwadrant) ---
-function makeGamepadPatch(slot /* number 0..3 */, pinnedId /* string|null */) {
-  // embed slot & id als literals
+function makeGamepadPatchCode(slot /* number 0..3 */, pinnedId /* string|null */) {
   const SLOT = Number(slot) | 0;
-  const ID   = pinnedId ? String(pinnedId).replace(/`/g, "\\`") : null;
+  const PID  = pinnedId ? '`' + String(pinnedId).replace(/`/g, '\\`') + '`' : 'null';
 
   return `
   (() => {
     function getNativeGetGamepads() {
       const desc = Object.getOwnPropertyDescriptor(Navigator.prototype, 'getGamepads')
-              || Object.getOwnPropertyDescriptor(navigator.__proto__, 'getGamepads');
+               || Object.getOwnPropertyDescriptor(navigator.__proto__, 'getGamepads');
       const fn = (desc && (desc.value || desc.get)) || navigator.getGamepads;
       return fn.call.bind(fn, navigator);
     }
     const nativeGetGamepads = getNativeGetGamepads();
-    const slot = ${SLOT};
-    const pinnedId = ${ID === null ? 'null' : '`' + ID + '`'};
+
+    const SLOT = ${SLOT};
+    const PINNED_ID = ${PID};
 
     function choosePad() {
-      const pads = Array.from(nativeGetGamepads());
-      if (pinnedId) {
-        const byId = pads.find(p => p && p.id === pinnedId);
-        return byId || null;
-      }
-      return pads[slot] || null;
+      const pads = Array.from(nativeGetGamepads() || []);
+      if (PINNED_ID) return pads.find(p => p && p.id === PINNED_ID) || null;
+      return pads[SLOT] || null;
     }
 
-    function proxyGamepad(gp) {
+    function proxyPad(gp) {
       if (!gp) return null;
-      return new Proxy(gp, {
-        get(t, p, r) { return p === 'index' ? 0 : Reflect.get(t, p, r); }
-      });
+      return new Proxy(gp, { get(t,p,r){ return p === 'index' ? 0 : Reflect.get(t,p,r); } });
     }
 
-    function filteredPadsArray() {
+    function filteredPads() {
       const chosen = choosePad();
       const out = [null, null, null, null];
-      if (chosen) out[0] = proxyGamepad(chosen);
+      if (chosen) out[0] = proxyPad(chosen);
       return out;
     }
 
-    // Override getGamepads in MAIN WORLD
     try {
       Object.defineProperty(navigator, 'getGamepads', {
         configurable: true,
         enumerable: true,
-        value: () => filteredPadsArray()
+        value: () => filteredPads()
       });
     } catch {}
 
-    // Filter connect/disconnect events
     const wAdd = window.addEventListener.bind(window);
-    window.addEventListener = function(type, listener, opts) {
+    window.addEventListener = function(type, listener, opts){
       if (type === 'gamepadconnected' || type === 'gamepaddisconnected') {
         const wrapped = (ev) => {
-          const gp = ev && ev.gamepad;
-          if (!gp) return;
-          const match = pinnedId ? (gp.id === pinnedId) : (gp.index === slot);
-          if (!match) return;
-          const proxEv = new Proxy(ev, {
-            get(t, p, r) { return (p === 'gamepad') ? proxyGamepad(gp) : Reflect.get(t, p, r); }
-          });
+          const gp = ev && ev.gamepad; if (!gp) return;
+          const ok = PINNED_ID ? (gp.id === PINNED_ID) : (gp.index === SLOT);
+          if (!ok) return;
+          const proxEv = new Proxy(ev, { get(t,p,r){ return p === 'gamepad' ? proxyPad(gp) : Reflect.get(t,p,r); } });
           try { listener(proxEv); } catch {}
         };
         return wAdd(type, wrapped, opts);
       }
       return wAdd(type, listener, opts);
     };
-
-    // Debug (optioneel): laat zien wat de pagina straks ziet
-    // setTimeout(() => console.debug('[QuadCloud mainworld]', location.href, navigator.getGamepads().map(p=>p&&{id:p.id,idx:p.index})), 500);
   })();
   `;
 }
 
 function installGamepadIsolation(webContents, slot, pinnedId = null) {
-  const code = makeGamepadPatch(slot, pinnedId);
+  const code = makeGamepadPatchCode(slot, pinnedId);
 
   function injectFrame(frame) {
     try { return frame.executeJavaScript(code, true); } catch {}
@@ -160,10 +147,17 @@ function installGamepadIsolation(webContents, slot, pinnedId = null) {
   });
 
   // Op elke (sub)frame navigatie
-  webContents.on('did-frame-navigate', () => injectAllFrames());
+  webContents.on('did-frame-navigate', () => { injectAllFrames(); });
 
   // Ook bij start navigatie nog eens
-  webContents.on('did-start-navigation', () => injectAllFrames());
+  webContents.on('did-start-navigation', () => { injectAllFrames(); });
+
+  // Korte retry-pulse voor laat binnenkomende frames
+  let retries = 8;
+  const iv = setInterval(() => {
+    injectAllFrames();
+    if (--retries <= 0) clearInterval(iv);
+  }, 250);
 }
 
 function installXcloudFocusWorkaround(webContents) {
@@ -185,9 +179,15 @@ function installXcloudFocusWorkaround(webContents) {
     try { injectFrame(details.frame); } catch {}
   });
 
-  webContents.on('did-frame-navigate', () => injectAllFrames());
+  webContents.on('did-frame-navigate', () => { injectAllFrames(); });
 
-  webContents.on('did-start-navigation', () => injectAllFrames());
+  webContents.on('did-start-navigation', () => { injectAllFrames(); });
+
+  let retries = 8;
+  const iv = setInterval(() => {
+    injectAllFrames();
+    if (--retries <= 0) clearInterval(iv);
+  }, 250);
 }
 
 const URLs = [
