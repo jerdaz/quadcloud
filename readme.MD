@@ -54,6 +54,8 @@ npm start
 
 The app automatically splits the active display into four equal quadrants based on the screen resolution. Each quadrant loads `https://xbox.com/play` by default. Adjust the `URLs` array in [`main.js`](main.js) to point to other streaming services if needed.
 
+To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, the app spoofs focus in the main world of all `xbox.com` frames.
+
 ## Notes
 
 - Works on Windows and Linux.
