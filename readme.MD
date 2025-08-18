@@ -59,3 +59,11 @@ The app automatically splits the active display into four equal quadrants based 
 - Works on Windows and Linux.
 - Gamepad filtering relies on the Gamepad API. Streaming services that read controllers directly from the OS may require additional tools for full isolation.
 
+## Hotkeys
+
+- **Ctrl+Q**: quit the application.
+- **Ctrl+1**: focus the top-left quadrant.
+- **Ctrl+2**: focus the top-right quadrant.
+- **Ctrl+3**: focus the bottom-left quadrant.
+- **Ctrl+4**: focus the bottom-right quadrant.
+

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, session, screen } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
 const path = require('path');
 
 const URLs = [
@@ -22,6 +22,8 @@ function createView(x, y, width, height, index) {
   return view;
 }
 
+const views = [];
+
 function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
   // a blank space where the taskbar would normally be.
@@ -38,7 +40,27 @@ function createWindow() {
   positions.forEach((pos, i) => {
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i);
     win.addBrowserView(view);
+    views[i] = view;
+  });
+  views[0].webContents.focus();
+}
+
+function registerShortcuts() {
+  globalShortcut.register('CommandOrControl+Q', () => {
+    app.quit();
+  });
+  views.forEach((view, i) => {
+    globalShortcut.register(`CommandOrControl+${i + 1}`, () => {
+      view.webContents.focus();
+    });
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  registerShortcuts();
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
