@@ -2,12 +2,55 @@
 
 Electron app that splits a 4K screen into four isolated 1080p browser sessions for xCloud or Remote Play. Each view uses its own persistent profile and only listens to a single controller.
 
+## Windows setup
+
+1. **Install Git** – download and run the installer from [git-scm.com](https://git-scm.com/download/win) and accept the defaults.
+2. **Install Node.js** – download the LTS version from [nodejs.org](https://nodejs.org) and run the installer.
+3. Open **Git Bash** (installed with Git) or **Command Prompt**.
+4. Clone the repository and enter the folder:
+
+   ```bash
+   git clone https://github.com/your-username/quadcloud.git
+   cd quadcloud
+   ```
+
+5. Install dependencies and start the app:
+
+   ```bash
+   npm install
+   npm start
+   ```
+
+## Linux setup (Debian/Ubuntu)
+
+1. Install Git and Node.js:
+
+   ```bash
+   sudo apt update
+   sudo apt install -y git nodejs npm
+   ```
+
+2. Clone the repository and enter the folder:
+
+   ```bash
+   git clone https://github.com/your-username/quadcloud.git
+   cd quadcloud
+   ```
+
+3. Install dependencies and start the app:
+
+   ```bash
+   npm install
+   npm start
+   ```
+=======
 ## Usage
 
 ```bash
 npm install
 npm start
 ```
+
 
 Each quadrant loads `https://xbox.com/play` by default. Adjust the `URLs` array in [`main.js`](main.js) to point to other streaming services if needed.
 
