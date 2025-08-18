@@ -28,7 +28,15 @@ function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
   // a blank space where the taskbar would normally be.
   const { width, height } = screen.getPrimaryDisplay().size;
-  const win = new BrowserWindow({ fullscreen: true, frame: false, autoHideMenuBar: true });
+  const win = new BrowserWindow({
+    fullscreen: true,
+    frame: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#000000'
+  });
+
+  win.loadFile(path.join(__dirname, 'background.html'));
+
   const viewWidth = Math.floor(width / 2);
   const viewHeight = Math.floor(height / 2);
   const positions = [
