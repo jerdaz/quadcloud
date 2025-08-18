@@ -113,7 +113,12 @@ function getGamepadPatch(index) {
   return `
 (() => {
   const myIndex = ${index};
-  const nativeGetGamepads = navigator.getGamepads.bind(navigator);
+  if (window.__gamepadIsolationPatched === myIndex) return;
+  window.__gamepadIsolationPatched = myIndex;
+
+  const nativeGetGamepads = navigator.__nativeGetGamepads || navigator.getGamepads.bind(navigator);
+  if (!navigator.__nativeGetGamepads) navigator.__nativeGetGamepads = nativeGetGamepads;
+
   navigator.getGamepads = () => {
     const gamepads = nativeGetGamepads();
     const result = [null, null, null, null];
@@ -128,20 +133,26 @@ function getGamepadPatch(index) {
     }
     return result;
   };
-  window.addEventListener('gamepadconnected', ev => {
+
+  const filterEvent = ev => {
     if (ev.gamepad.index !== myIndex) {
       ev.stopImmediatePropagation();
     } else {
       try { Object.defineProperty(ev.gamepad, 'index', { value: 0 }); } catch {}
     }
-  });
-  window.addEventListener('gamepaddisconnected', ev => {
-    if (ev.gamepad.index !== myIndex) {
-      ev.stopImmediatePropagation();
-    } else {
-      try { Object.defineProperty(ev.gamepad, 'index', { value: 0 }); } catch {}
-    }
-  });
+  };
+  window.addEventListener('gamepadconnected', filterEvent, true);
+  window.addEventListener('gamepaddisconnected', filterEvent, true);
+
+  const existing = nativeGetGamepads()[myIndex];
+  if (existing) {
+    try {
+      Object.defineProperty(existing, 'index', { value: 0 });
+      const evt = new Event('gamepadconnected');
+      Object.defineProperty(evt, 'gamepad', { value: existing });
+      window.dispatchEvent(evt);
+    } catch {}
+  }
 })()`;
 }
 
