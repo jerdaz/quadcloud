@@ -56,8 +56,11 @@ const XFOCUS_PATCH = `
     }
   };
   tryDismiss();
-  const mo = new MutationObserver(tryDismiss);
-  mo.observe(document.documentElement, { childList:true, subtree:true });
+  const rootElem = document.documentElement;
+  if (rootElem) {
+    const mo = new MutationObserver(tryDismiss);
+    mo.observe(rootElem, { childList:true, subtree:true });
+  }
 })()
 `;
 
@@ -127,7 +130,9 @@ function installGamepadIsolation(webContents, slot, pinnedId = null) {
   const code = makeGamepadPatchCode(slot, pinnedId);
 
   function injectFrame(frame) {
-    try { return frame.executeJavaScript(code, true); } catch {}
+    try {
+      frame.executeJavaScript(code, true).catch(() => {});
+    } catch {}
   }
 
   function injectAllFrames() {
@@ -143,7 +148,9 @@ function installGamepadIsolation(webContents, slot, pinnedId = null) {
 
   // Op nieuwe frames
   webContents.on('frame-created', (_e, details) => {
-    try { injectFrame(details.frame); } catch {}
+    try {
+      details.frame.once('dom-ready', () => injectFrame(details.frame));
+    } catch {}
   });
 
   // Op elke (sub)frame navigatie
@@ -162,7 +169,9 @@ function installGamepadIsolation(webContents, slot, pinnedId = null) {
 
 function installXcloudFocusWorkaround(webContents) {
   function injectFrame(frame) {
-    try { return frame.executeJavaScript(XFOCUS_PATCH, true); } catch {}
+    try {
+      frame.executeJavaScript(XFOCUS_PATCH, true).catch(() => {});
+    } catch {}
   }
 
   function injectAllFrames() {
@@ -176,7 +185,9 @@ function installXcloudFocusWorkaround(webContents) {
   webContents.on('dom-ready', injectAllFrames);
 
   webContents.on('frame-created', (_e, details) => {
-    try { injectFrame(details.frame); } catch {}
+    try {
+      details.frame.once('dom-ready', () => injectFrame(details.frame));
+    } catch {}
   });
 
   webContents.on('did-frame-navigate', () => { injectAllFrames(); });
