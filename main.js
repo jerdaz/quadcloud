@@ -1,6 +1,12 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+
+
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
 const XBOX_HOST_RE = /(^|\.)xbox\.com$/i;
 
@@ -120,6 +126,8 @@ function createView(x, y, width, height, index) {
   });
   view.webContents.controllerIndex = index;
   view.setBounds({ x, y, width, height });
+  view.setAutoResize({ width: true, height: true });
+  view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
   view.webContents.loadURL(URLs[index]);
   return view;
@@ -157,7 +165,6 @@ function createWindow() {
     win.addBrowserView(view);
     views[i] = view;
   });
-  views[0].webContents.focus();
 }
 
 function registerShortcuts() {
