@@ -2,8 +2,6 @@ const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = req
 const path = require('path');
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
-const XBOX_HOST_RE = /(^|\.)xbox\.com$/i;
-
 const XFOCUS_PATCH = `
 (() => {
   const docProto = Document.prototype;
@@ -71,7 +69,13 @@ function makeGamepadPatch(slot /* number 0..3 */, pinnedId /* string|null */) {
 
   return `
   (() => {
-    const nativeGetGamepads = navigator.getGamepads.bind(navigator);
+    function getNativeGetGamepads() {
+      const desc = Object.getOwnPropertyDescriptor(Navigator.prototype, 'getGamepads')
+              || Object.getOwnPropertyDescriptor(navigator.__proto__, 'getGamepads');
+      const fn = (desc && (desc.value || desc.get)) || navigator.getGamepads;
+      return fn.call.bind(fn, navigator);
+    }
+    const nativeGetGamepads = getNativeGetGamepads();
     const slot = ${SLOT};
     const pinnedId = ${ID === null ? 'null' : '`' + ID + '`'};
 
@@ -101,7 +105,7 @@ function makeGamepadPatch(slot /* number 0..3 */, pinnedId /* string|null */) {
     // Override getGamepads in MAIN WORLD
     try {
       Object.defineProperty(navigator, 'getGamepads', {
-        configurable: false,
+        configurable: true,
         enumerable: true,
         value: () => filteredPadsArray()
       });
@@ -156,50 +160,34 @@ function installGamepadIsolation(webContents, slot, pinnedId = null) {
   });
 
   // Op elke (sub)frame navigatie
-  webContents.on('did-frame-navigate', injectAllFrames);
+  webContents.on('did-frame-navigate', () => injectAllFrames());
 
   // Ook bij start navigatie nog eens
-  webContents.on('did-start-navigation', injectAllFrames);
+  webContents.on('did-start-navigation', () => injectAllFrames());
 }
 
-function injectPatchIntoFrame(frame) {
-  try {
-    const url = frame.url || '';
-    let host = '';
-    try { host = new URL(url).hostname; } catch {}
-    if (!host || !XBOX_HOST_RE.test(host)) return;
-    return frame.executeJavaScript(XFOCUS_PATCH, true);
-  } catch {
-    // ignore
+function installXcloudFocusWorkaround(webContents) {
+  function injectFrame(frame) {
+    try { return frame.executeJavaScript(XFOCUS_PATCH, true); } catch {}
   }
-}
 
-function installXcloudFocusWorkaround(wc) {
-  wc.on('dom-ready', () => {
+  function injectAllFrames() {
     try {
-      const mf = wc.mainFrame;
-      injectPatchIntoFrame(mf);
-      for (const f of mf.frames) injectPatchIntoFrame(f);
+      const mf = webContents.mainFrame;
+      injectFrame(mf);
+      for (const f of mf.frames) injectFrame(f);
     } catch {}
+  }
+
+  webContents.on('dom-ready', injectAllFrames);
+
+  webContents.on('frame-created', (_e, details) => {
+    try { injectFrame(details.frame); } catch {}
   });
 
-  wc.on('did-frame-navigate', (_e, details) => {
-    try {
-      const f = wc.mainFrame.frames.find(fr => fr.frameTreeNodeId === details.frameTreeNodeId);
-      if (f) injectPatchIntoFrame(f);
-    } catch {}
-  });
+  webContents.on('did-frame-navigate', () => injectAllFrames());
 
-  wc.on('frame-created', (_e, details) => {
-    try { injectPatchIntoFrame(details.frame); } catch {}
-  });
-
-  wc.on('did-start-navigation', () => {
-    try {
-      const mf = wc.mainFrame;
-      injectPatchIntoFrame(mf);
-    } catch {}
-  });
+  webContents.on('did-start-navigation', () => injectAllFrames());
 }
 
 const URLs = [
