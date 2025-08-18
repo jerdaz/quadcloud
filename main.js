@@ -24,7 +24,14 @@ function createView(x, y, width, height, index) {
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  const win = new BrowserWindow({ fullscreen: true, frame: false, autoHideMenuBar: true });
+  const win = new BrowserWindow({
+    fullscreen: true,
+    frame: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#000000'
+  });
+
+  win.loadFile(path.join(__dirname, 'background.html'));
   const viewWidth = Math.floor(width / 2);
   const viewHeight = Math.floor(height / 2);
   const positions = [
