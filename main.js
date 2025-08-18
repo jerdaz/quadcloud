@@ -14,7 +14,10 @@ function createView(x, y, width, height, index) {
     webPreferences: {
       session: viewSession,
       preload: path.join(__dirname, 'preload.js'),
-      additionalArguments: [`--controllerIndex=${index}`]
+      additionalArguments: [`--controllerSlot=${index}`],
+      contextIsolation: true,
+      sandbox: true,
+      enableBlinkFeatures: 'GamepadButton,GamepadExtensions'
     }
   });
   view.setBounds({ x, y, width, height });
