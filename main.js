@@ -1,10 +1,34 @@
-const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
+
+let config = {
+  audioOutputs: ['default', 'default', 'default', 'default'],
+  controllerMapping: [0, 1, 2, 3]
+};
+let configWindow = null;
+let CONFIG_FILE;
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+
+
+function loadConfig() {
+  try {
+    const raw = fs.readFileSync(CONFIG_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed.audioOutputs)) config.audioOutputs = parsed.audioOutputs;
+    if (Array.isArray(parsed.controllerMapping)) config.controllerMapping = parsed.controllerMapping;
+  } catch {}
+}
+
+function saveConfig() {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config));
+  } catch {}
+}
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -160,32 +184,69 @@ function injectGamepadPatchIntoFrame(frame, index) {
   try { frame.executeJavaScript(getGamepadPatch(index), true); } catch {}
 }
 
-function installGamepadIsolation(wc, index) {
+function installGamepadIsolation(wc) {
   wc.on('dom-ready', () => {
     try {
       const mf = wc.mainFrame;
-      injectGamepadPatchIntoFrame(mf, index);
-      for (const f of mf.frames) injectGamepadPatchIntoFrame(f, index);
+      injectGamepadPatchIntoFrame(mf, wc.controllerIndex);
+      for (const f of mf.frames) injectGamepadPatchIntoFrame(f, wc.controllerIndex);
     } catch {}
   });
 
   wc.on('did-frame-navigate', (_e, details) => {
     try {
       const f = wc.mainFrame.frames.find(fr => fr.frameTreeNodeId === details.frameTreeNodeId);
-      if (f) injectGamepadPatchIntoFrame(f, index);
+      if (f) injectGamepadPatchIntoFrame(f, wc.controllerIndex);
     } catch {}
   });
 
   wc.on('frame-created', (_e, details) => {
-    try { injectGamepadPatchIntoFrame(details.frame, index); } catch {}
+    try { injectGamepadPatchIntoFrame(details.frame, wc.controllerIndex); } catch {}
   });
 
   wc.on('did-start-navigation', () => {
     try {
       const mf = wc.mainFrame;
-      injectGamepadPatchIntoFrame(mf, index);
+      injectGamepadPatchIntoFrame(mf, wc.controllerIndex);
     } catch {}
   });
+}
+
+function applyAudioOutput(index) {
+  const view = views[index];
+  if (!view) return;
+  try { view.webContents.setAudioOutputDevice(config.audioOutputs[index] || 'default'); } catch {}
+}
+
+function applyController(index) {
+  const view = views[index];
+  if (!view) return;
+  const controllerIndex = config.controllerMapping[index];
+  view.webContents.controllerIndex = controllerIndex;
+  try {
+    const mf = view.webContents.mainFrame;
+    injectGamepadPatchIntoFrame(mf, controllerIndex);
+    for (const f of mf.frames) injectGamepadPatchIntoFrame(f, controllerIndex);
+  } catch {}
+}
+
+function setAudioOutput(index, deviceId) {
+  config.audioOutputs[index] = deviceId;
+  applyAudioOutput(index);
+  saveConfig();
+}
+
+function setController(index, controllerIndex) {
+  const other = config.controllerMapping.indexOf(controllerIndex);
+  if (other !== -1 && other !== index) {
+    const tmp = config.controllerMapping[index];
+    config.controllerMapping[other] = tmp;
+    applyController(other);
+  }
+  config.controllerMapping[index] = controllerIndex;
+  applyController(index);
+  saveConfig();
+  return config.controllerMapping;
 }
 
 const URLs = [
@@ -203,13 +264,15 @@ function createView(x, y, width, height, index) {
       preload: path.join(__dirname, 'preload.js')
     }
   });
-  view.webContents.controllerIndex = index;
+  const controllerIndex = config.controllerMapping[index] ?? index;
+  view.webContents.controllerIndex = controllerIndex;
   view.setBounds({ x, y, width, height });
   view.setAutoResize({ width: true, height: true });
   view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
-  installGamepadIsolation(view.webContents, index);
+  installGamepadIsolation(view.webContents);
   view.webContents.loadURL(URLs[index]);
+  view.webContents.on('did-finish-load', () => applyAudioOutput(index));
   return view;
 }
 
@@ -252,9 +315,39 @@ function registerShortcuts() {
       view.webContents.focus();
     });
   });
+  globalShortcut.register('CommandOrControl+Shift+S', () => {
+    openConfigWindow();
+  });
 }
 
+function openConfigWindow() {
+  if (configWindow) {
+    configWindow.focus();
+    return;
+  }
+  configWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'configPreload.js')
+    }
+  });
+  configWindow.on('closed', () => { configWindow = null; });
+  configWindow.loadFile(path.join(__dirname, 'config.html'));
+}
+
+ipcMain.handle('get-config', () => config);
+ipcMain.handle('set-audio-output', (_e, { index, deviceId }) => {
+  setAudioOutput(index, deviceId);
+});
+ipcMain.handle('set-controller', (_e, { index, controller }) => {
+  return setController(index, controller);
+});
+
 app.whenReady().then(() => {
+  CONFIG_FILE = path.join(app.getPath('userData'), 'config.json');
+  loadConfig();
   createWindow();
   registerShortcuts();
 });
