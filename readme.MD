@@ -1,6 +1,6 @@
 # Quad Play
 
-Electron app that splits a 4K screen into four isolated 1080p browser sessions for xCloud or Remote Play. Each view uses its own persistent profile and only listens to a single controller.
+Electron app that splits the display into four isolated browser sessions for xCloud or Remote Play. Each view scales to half of the screen's width and height—for example, on a 4K screen each view is 1080p, and on a 1080p screen each view is 540p. Every view uses its own persistent profile and only listens to a single controller.
 
 ## Windows setup
 
@@ -52,7 +52,7 @@ npm start
 ```
 
 
-Each quadrant loads `https://xbox.com/play` by default. Adjust the `URLs` array in [`main.js`](main.js) to point to other streaming services if needed.
+The app automatically splits the active display into four equal quadrants based on the screen resolution. Each quadrant loads `https://xbox.com/play` by default. Adjust the `URLs` array in [`main.js`](main.js) to point to other streaming services if needed.
 
 ## Notes
 
