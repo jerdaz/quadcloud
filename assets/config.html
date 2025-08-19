@@ -41,6 +41,12 @@
     button {
       margin-left: 8px;
     }
+    .note {
+      font-size: 0.8em;
+      margin-top: -4px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -65,8 +71,9 @@
     <div class="row">
       <label for="audioSelect">Audio Device</label>
       <select id="audioSelect"></select>
-      <button id="applyAudio">Apply</button>
+      <button id="applyAudio" disabled>Apply</button>
     </div>
+    <div class="note">Audio device selection is not implemented yet.</div>
     <div style="text-align: right;">
       <button id="closeBtn">Close</button>
     </div>

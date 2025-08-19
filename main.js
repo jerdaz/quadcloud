@@ -14,7 +14,6 @@ let profileStore;
 const views = [];
 const configViews = [];
 let controllerAssignments = [0, 1, 2, 3];
-let audioAssignments = [];
 let win;
 let viewWidth = 0;
 let viewHeight = 0;
@@ -252,13 +251,7 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
-    const audio = profileStore.getAudio(i);
-    audioAssignments[i] = audio ?? audioAssignments[i];
-    profileStore.assignAudio(i, audioAssignments[i]);
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
-    if (audioAssignments[i]) {
-      try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
-    }
     win.addBrowserView(view);
     views[i] = view;
   });
@@ -285,8 +278,7 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index],
-    currentAudio: audioAssignments[index]
+    currentController: controllerAssignments[index]
   };
 }
 
@@ -307,10 +299,6 @@ function reloadView(slot) {
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
-  const audio = audioAssignments[slot];
-  if (audio) {
-    try { view.webContents.setAudioOutputDevice(audio); } catch {}
-  }
   win.addBrowserView(view);
   views[slot] = view;
 }
@@ -358,13 +346,6 @@ ipcMain.on('select-profile', (_e, { index, profileId }) => {
 ipcMain.on('select-controller', (_e, { index, controller }) => {
   controllerAssignments[index] = controller;
   profileStore.assignController(index, controller);
-  closeConfigView(win, configViews, index);
-  reloadView(index);
-});
-
-ipcMain.on('select-audio', (_e, { index, deviceId }) => {
-  audioAssignments[index] = deviceId;
-  profileStore.assignAudio(index, deviceId);
   closeConfigView(win, configViews, index);
   reloadView(index);
 });
