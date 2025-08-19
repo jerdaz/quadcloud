@@ -55,7 +55,6 @@ Electron app that splits the display into four isolated browser sessions for xCl
    npm install
    npm start
    ```
-=======
 ## Usage
 
 ```bash
@@ -80,4 +79,10 @@ To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, th
 - **Ctrl+2**: focus the top-right quadrant.
 - **Ctrl+3**: focus the bottom-left quadrant.
 - **Ctrl+4**: focus the bottom-right quadrant.
+
+## Testing
+
+```bash
+npm test
+```
 

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -9,7 +10,6 @@ app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
-const XBOX_HOST_RE = /(^|\.)xbox\.com$/i;
 
 const XFOCUS_PATCH = `
 (() => {
@@ -108,53 +108,6 @@ function installXcloudFocusWorkaround(wc) {
       injectPatchIntoFrame(mf);
     } catch {}
   });
-}
-
-function getGamepadPatch(index) {
-  return `
-(() => {
-  const myIndex = ${index};
-  if (window.__gamepadIsolationPatched === myIndex) return;
-  window.__gamepadIsolationPatched = myIndex;
-
-  const nativeGetGamepads = navigator.__nativeGetGamepads || navigator.getGamepads.bind(navigator);
-  if (!navigator.__nativeGetGamepads) navigator.__nativeGetGamepads = nativeGetGamepads;
-
-  navigator.getGamepads = () => {
-    const gamepads = nativeGetGamepads();
-    const result = [null, null, null, null];
-    const pad = gamepads[myIndex];
-    if (pad) {
-      const proxied = new Proxy(pad, {
-        get(target, prop) {
-          return prop === 'index' ? 0 : target[prop];
-        }
-      });
-      result[0] = proxied;
-    }
-    return result;
-  };
-
-  const filterEvent = ev => {
-    if (ev.gamepad.index !== myIndex) {
-      ev.stopImmediatePropagation();
-    } else {
-      try { Object.defineProperty(ev.gamepad, 'index', { value: 0 }); } catch {}
-    }
-  };
-  window.addEventListener('gamepadconnected', filterEvent, true);
-  window.addEventListener('gamepaddisconnected', filterEvent, true);
-
-  const existing = nativeGetGamepads()[myIndex];
-  if (existing) {
-    try {
-      Object.defineProperty(existing, 'index', { value: 0 });
-      const evt = new Event('gamepadconnected');
-      Object.defineProperty(evt, 'gamepad', { value: existing });
-      window.dispatchEvent(evt);
-    } catch {}
-  }
-})()`;
 }
 
 function injectGamepadPatchIntoFrame(frame, index) {
