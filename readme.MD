@@ -67,6 +67,8 @@ The app automatically splits the active display into four equal quadrants based 
 
 To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, the app spoofs focus in the main world of all `xbox.com` frames.
 
+Each quadrant also exposes a configuration panel (Ctrl+Alt+1–4) where you can rename or switch profiles, choose a controller, and pick an audio output device. Profile selections persist across sessions.
+
 ## Notes
 
 - Works on Windows and Linux.
@@ -79,6 +81,7 @@ To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, th
 - **Ctrl+2**: focus the top-right quadrant.
 - **Ctrl+3**: focus the bottom-left quadrant.
 - **Ctrl+4**: focus the bottom-right quadrant.
+- **Ctrl+Alt+1-4**: open the configuration panel for the corresponding quadrant.
 
 ## Testing
 
