@@ -1,11 +1,13 @@
 const { ipcRenderer } = require('electron');
 let viewIndex = null;
+let currentAudio = 'default';
 
 ipcRenderer.on('init', (_e, data) => {
   viewIndex = data.index;
   document.getElementById('profileName').value = data.name || '';
   fillProfiles(data.profiles, data.currentProfile);
   fillControllers(data.controllers, data.currentController);
+  currentAudio = data.currentAudio || 'default';
   enumerateAudio();
 });
 
@@ -36,10 +38,16 @@ function fillControllers(controllers, current) {
 function fillAudio(devices) {
   const select = document.getElementById('audioSelect');
   select.innerHTML = '';
+  const def = document.createElement('option');
+  def.value = 'default';
+  def.textContent = 'Default';
+  if (!currentAudio || currentAudio === 'default') def.selected = true;
+  select.appendChild(def);
   devices.forEach(dev => {
     const opt = document.createElement('option');
     opt.value = dev.deviceId;
     opt.textContent = dev.label;
+    if (dev.deviceId === currentAudio) opt.selected = true;
     select.appendChild(opt);
   });
 }
@@ -65,7 +73,9 @@ document.getElementById('applyController').addEventListener('click', () => {
   ipcRenderer.send('select-controller', { index: viewIndex, controller: parseInt(document.getElementById('controllerSelect').value, 10) });
 });
 
-document.getElementById('applyAudio').disabled = true;
+document.getElementById('applyAudio').addEventListener('click', () => {
+  ipcRenderer.send('select-audio', { index: viewIndex, deviceId: document.getElementById('audioSelect').value });
+});
 
 document.getElementById('newProfile').addEventListener('click', () => {
   ipcRenderer.send('create-profile', { index: viewIndex, name: document.getElementById('profileName').value });

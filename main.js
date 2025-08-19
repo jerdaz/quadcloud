@@ -14,6 +14,7 @@ let profileStore;
 const views = [];
 const configViews = [];
 let controllerAssignments = [0, 1, 2, 3];
+let audioAssignments = [];
 let win;
 let viewWidth = 0;
 let viewHeight = 0;
@@ -251,8 +252,13 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
+    const audio = profileStore.getAudio(i);
+    audioAssignments[i] = audio ?? 'default';
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
     win.addBrowserView(view);
+    if (audioAssignments[i] && audioAssignments[i] !== 'default') {
+      view.webContents.setAudioOutputDevice(audioAssignments[i]).catch(() => {});
+    }
     views[i] = view;
   });
 }
@@ -278,7 +284,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: audioAssignments[index]
   };
 }
 
@@ -300,6 +307,10 @@ function reloadView(slot) {
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
   win.addBrowserView(view);
+  const audio = audioAssignments[slot];
+  if (audio && audio !== 'default') {
+    view.webContents.setAudioOutputDevice(audio).catch(() => {});
+  }
   views[slot] = view;
 }
 
@@ -348,6 +359,16 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioAssignments[index] = deviceId || 'default';
+  profileStore.assignAudio(index, deviceId || 'default');
+  const view = views[index];
+  if (view) {
+    view.webContents.setAudioOutputDevice(deviceId || 'default').catch(() => {});
+  }
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
