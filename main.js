@@ -1,12 +1,24 @@
-const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const ProfileStore = require('./lib/profile-store');
+const { destroyView } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+
+let profileStore;
+const views = [];
+const configViews = [];
+let controllerAssignments = [0, 1, 2, 3];
+let audioAssignments = [];
+let win;
+let viewWidth = 0;
+let viewHeight = 0;
+let positions = [];
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -191,32 +203,30 @@ const URLs = [
   'https://xbox.com/play'
 ];
 
-function createView(x, y, width, height, index) {
-  const viewSession = session.fromPartition(`persist:player${index}`);
+function createView(x, y, width, height, slot, profileId, controllerIndex) {
+  const viewSession = session.fromPartition(`persist:${profileId}`);
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
       preload: path.join(__dirname, 'preload.js')
     }
   });
-  view.webContents.controllerIndex = index;
+  view.webContents.controllerIndex = controllerIndex;
   view.setBounds({ x, y, width, height });
   view.setAutoResize({ width: true, height: true });
   view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
-  installGamepadIsolation(view.webContents, index);
+  installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
-  view.webContents.loadURL(URLs[index]);
+  view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
-
-const views = [];
 
 function createWindow() {
   // Use the full display size instead of the work area to avoid leaving
   // a blank space where the taskbar would normally be.
   const { width, height } = screen.getPrimaryDisplay().size;
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     fullscreen: true,
     frame: false,
     autoHideMenuBar: true,
@@ -225,19 +235,84 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, 'background.html'));
 
-  const viewWidth = Math.floor(width / 2);
-  const viewHeight = Math.floor(height / 2);
-  const positions = [
+  viewWidth = Math.floor(width / 2);
+  viewHeight = Math.floor(height / 2);
+  positions = [
     { x: 0,         y: 0 },
     { x: viewWidth, y: 0 },
     { x: 0,         y: viewHeight },
     { x: viewWidth, y: viewHeight }
   ];
   positions.forEach((pos, i) => {
-    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i);
+    let profileId = profileStore.getAssignment(i);
+    if (!profileId) {
+      profileId = profileStore.createProfile(`player${i + 1}`);
+      profileStore.assignProfile(i, profileId);
+    }
+    const controller = profileStore.getController(i);
+    controllerAssignments[i] = controller ?? controllerAssignments[i];
+    profileStore.assignController(i, controllerAssignments[i]);
+    const audio = profileStore.getAudio(i);
+    audioAssignments[i] = audio ?? audioAssignments[i];
+    profileStore.assignAudio(i, audioAssignments[i]);
+    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
+    if (audioAssignments[i]) {
+      try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
+    }
     win.addBrowserView(view);
     views[i] = view;
   });
+}
+
+function getConfigView(index) {
+  let cfg = configViews[index];
+  if (cfg) return cfg;
+  cfg = new BrowserView({
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
+  });
+  cfg.setBounds({ x: positions[index].x, y: positions[index].y, width: viewWidth, height: viewHeight });
+  cfg.setAutoResize({ width: true, height: true });
+  cfg.webContents.loadFile(path.join(__dirname, 'assets', 'config.html'));
+  configViews[index] = cfg;
+  return cfg;
+}
+
+function gatherConfigData(index) {
+  const profileId = profileStore.getAssignment(index);
+  return {
+    index,
+    name: profileStore.getProfiles()[profileId],
+    profiles: profileStore.getProfiles(),
+    currentProfile: profileId,
+    controllers: [0,1,2,3],
+    currentController: controllerAssignments[index],
+    currentAudio: audioAssignments[index]
+  };
+}
+
+function toggleConfig(index) {
+  const cfg = getConfigView(index);
+  if (win.getBrowserViews().includes(cfg)) {
+    win.removeBrowserView(cfg);
+  } else {
+    cfg.setBounds({ x: positions[index].x, y: positions[index].y, width: viewWidth, height: viewHeight });
+    win.addBrowserView(cfg);
+    cfg.webContents.send('init', gatherConfigData(index));
+  }
+}
+
+function reloadView(slot) {
+  const pos = positions[slot];
+  destroyView(win, views[slot]);
+  const profileId = profileStore.getAssignment(slot);
+  const controller = controllerAssignments[slot];
+  const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
+  const audio = audioAssignments[slot];
+  if (audio) {
+    try { view.webContents.setAudioOutputDevice(audio); } catch {}
+  }
+  win.addBrowserView(view);
+  views[slot] = view;
 }
 
 function registerShortcuts() {
@@ -246,12 +321,58 @@ function registerShortcuts() {
   });
   views.forEach((view, i) => {
     globalShortcut.register(`CommandOrControl+${i + 1}`, () => {
+      toggleConfig(i);
+    });
+    globalShortcut.register(`CommandOrControl+Alt+${i + 1}`, () => {
       view.webContents.focus();
     });
   });
 }
 
+ipcMain.on('config-ready', (e) => {
+  const index = configViews.findIndex(cv => cv && cv.webContents === e.sender);
+  if (index !== -1) {
+    e.sender.send('init', gatherConfigData(index));
+  }
+});
+
+ipcMain.on('rename-profile', (_e, { index, name }) => {
+  const id = profileStore.getAssignment(index);
+  profileStore.renameProfile(id, name);
+});
+
+ipcMain.on('create-profile', (_e, { index, name }) => {
+  const id = profileStore.createProfile(name);
+  profileStore.assignProfile(index, id);
+  reloadView(index);
+  const cfg = configViews[index];
+  if (cfg) cfg.webContents.send('init', gatherConfigData(index));
+});
+
+ipcMain.on('select-profile', (_e, { index, profileId }) => {
+  profileStore.assignProfile(index, profileId);
+  reloadView(index);
+});
+
+ipcMain.on('select-controller', (_e, { index, controller }) => {
+  controllerAssignments[index] = controller;
+  profileStore.assignController(index, controller);
+  reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioAssignments[index] = deviceId;
+  profileStore.assignAudio(index, deviceId);
+  reloadView(index);
+});
+
+ipcMain.on('close-config', (_e, { index }) => {
+  const cfg = configViews[index];
+  if (cfg) win.removeBrowserView(cfg);
+});
+
 app.whenReady().then(() => {
+  profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
   createWindow();
   registerShortcuts();
 });
