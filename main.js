@@ -1,7 +1,7 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const { XBOX_HOST_RE, getGamepadPatch, getAudioSinkPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 
@@ -14,6 +14,7 @@ let profileStore;
 const views = [];
 const configViews = [];
 let controllerAssignments = [0, 1, 2, 3];
+let audioAssignments = [null, null, null, null];
 let win;
 let viewWidth = 0;
 let viewHeight = 0;
@@ -195,6 +196,11 @@ function installBetterXcloud(wc) {
   });
 }
 
+function applyAudioOutput(wc, deviceId) {
+  if (!deviceId) return;
+  try { wc.executeJavaScript(getAudioSinkPatch(deviceId), true); } catch {}
+}
+
 const URLs = [
   'https://xbox.com/play',
   'https://xbox.com/play',
@@ -217,6 +223,9 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  view.webContents.on('dom-ready', () => {
+    applyAudioOutput(view.webContents, audioAssignments[slot]);
+  });
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -278,7 +287,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: audioAssignments[index]
   };
 }
 
@@ -348,6 +358,13 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioAssignments[index] = deviceId;
+  closeConfigView(win, configViews, index);
+  const view = views[index];
+  if (view) applyAudioOutput(view.webContents, deviceId);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {

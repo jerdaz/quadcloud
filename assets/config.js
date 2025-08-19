@@ -6,7 +6,7 @@ ipcRenderer.on('init', (_e, data) => {
   document.getElementById('profileName').value = data.name || '';
   fillProfiles(data.profiles, data.currentProfile);
   fillControllers(data.controllers, data.currentController);
-  enumerateAudio();
+  enumerateAudio(data.currentAudio);
 });
 
 function fillProfiles(profiles, current) {
@@ -33,23 +33,25 @@ function fillControllers(controllers, current) {
   });
 }
 
-function fillAudio(devices) {
+function fillAudio(devices, current) {
   const select = document.getElementById('audioSelect');
   select.innerHTML = '';
   devices.forEach(dev => {
     const opt = document.createElement('option');
     opt.value = dev.deviceId;
     opt.textContent = dev.label;
+    if (dev.deviceId === current) opt.selected = true;
     select.appendChild(opt);
   });
+  document.getElementById('applyAudio').disabled = devices.length === 0;
 }
 
-async function enumerateAudio() {
+async function enumerateAudio(selected) {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    fillAudio(devices.filter(d => d.kind === 'audiooutput'));
+    fillAudio(devices.filter(d => d.kind === 'audiooutput'), selected);
   } catch {
-    fillAudio([]);
+    fillAudio([], selected);
   }
 }
 
@@ -65,8 +67,6 @@ document.getElementById('applyController').addEventListener('click', () => {
   ipcRenderer.send('select-controller', { index: viewIndex, controller: parseInt(document.getElementById('controllerSelect').value, 10) });
 });
 
-document.getElementById('applyAudio').disabled = true;
-
 document.getElementById('newProfile').addEventListener('click', () => {
   ipcRenderer.send('create-profile', { index: viewIndex, name: document.getElementById('profileName').value });
 });
@@ -76,3 +76,7 @@ document.getElementById('closeBtn').addEventListener('click', () => {
 });
 
 ipcRenderer.send('config-ready');
+
+document.getElementById('applyAudio').addEventListener('click', () => {
+  ipcRenderer.send('select-audio', { index: viewIndex, deviceId: document.getElementById('audioSelect').value });
+});
