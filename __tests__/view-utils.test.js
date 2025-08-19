@@ -46,6 +46,17 @@ test('attachViewWithAudio skips audio routing on linux', () => {
   expect(wc.setAudioOutputDevice).not.toHaveBeenCalled();
 });
 
+test('attachViewWithAudio warns when API is missing', () => {
+  const win = { addBrowserView: jest.fn() };
+  const wc = new EventEmitter();
+  const view = { webContents: wc };
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  attachViewWithAudio(win, view, 'dev1', { platform: 'win32' });
+  expect(win.addBrowserView).toHaveBeenCalledWith(view);
+  expect(warn).toHaveBeenCalled();
+  warn.mockRestore();
+});
+
 test('attachViewWithAudio falls back to default on failure', async () => {
   jest.useFakeTimers();
   const win = { addBrowserView: jest.fn() };
