@@ -29,4 +29,14 @@ describe('ProfileStore', () => {
     const store2 = new ProfileStore(file);
     expect(Object.keys(store2.getProfiles())).toHaveLength(6);
   });
+
+  test('persists audio assignments', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'profiles-'));
+    const file = path.join(tmp, 'profiles.json');
+    const store1 = new ProfileStore(file);
+    store1.assignAudio(1, 'device123');
+
+    const store2 = new ProfileStore(file);
+    expect(store2.getAudio(1)).toBe('device123');
+  });
 });

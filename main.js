@@ -251,7 +251,13 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
+    const audio = profileStore.getAudio(i);
+    audioAssignments[i] = audio ?? audioAssignments[i];
+    profileStore.assignAudio(i, audioAssignments[i]);
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
+    if (audioAssignments[i]) {
+      try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
+    }
     win.addBrowserView(view);
     views[i] = view;
   });
@@ -279,7 +285,6 @@ function gatherConfigData(index) {
     currentProfile: profileId,
     controllers: [0,1,2,3],
     currentController: controllerAssignments[index],
-    audioDevices: [],
     currentAudio: audioAssignments[index]
   };
 }
@@ -302,6 +307,10 @@ function reloadView(slot) {
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
+  const audio = audioAssignments[slot];
+  if (audio) {
+    try { view.webContents.setAudioOutputDevice(audio); } catch {}
+  }
   win.addBrowserView(view);
   views[slot] = view;
 }
@@ -312,10 +321,10 @@ function registerShortcuts() {
   });
   views.forEach((view, i) => {
     globalShortcut.register(`CommandOrControl+${i + 1}`, () => {
-      view.webContents.focus();
+      toggleConfig(i);
     });
     globalShortcut.register(`CommandOrControl+Alt+${i + 1}`, () => {
-      toggleConfig(i);
+      view.webContents.focus();
     });
   });
 }

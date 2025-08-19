@@ -6,7 +6,7 @@ ipcRenderer.on('init', (_e, data) => {
   document.getElementById('profileName').value = data.name || '';
   fillProfiles(data.profiles, data.currentProfile);
   fillControllers(data.controllers, data.currentController);
-  fillAudio(data.audioDevices, data.currentAudio);
+  enumerateAudio(data.currentAudio);
 });
 
 function fillProfiles(profiles, current) {
@@ -43,6 +43,15 @@ function fillAudio(devices, current) {
     if (dev.deviceId === current) opt.selected = true;
     select.appendChild(opt);
   });
+}
+
+async function enumerateAudio(current) {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    fillAudio(devices.filter(d => d.kind === 'audiooutput'), current);
+  } catch {
+    fillAudio([], current);
+  }
 }
 
 document.getElementById('saveName').addEventListener('click', () => {
