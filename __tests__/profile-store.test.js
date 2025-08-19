@@ -11,11 +11,13 @@ describe('ProfileStore', () => {
     const id = store1.createProfile('Player');
     store1.assignProfile(0, id);
     store1.assignController(0, 2);
+    store1.assignAudio(0, 'device1');
 
     const store2 = new ProfileStore(file);
     expect(store2.getProfiles()[id]).toBe('Player');
     expect(store2.getAssignment(0)).toBe(id);
     expect(store2.getController(0)).toBe(2);
+    expect(store2.getAudio(0)).toBe('device1');
   });
 
   test('allows creating more than four profiles', () => {

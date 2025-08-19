@@ -195,6 +195,23 @@ function installBetterXcloud(wc) {
   });
 }
 
+function applyAudioOutput(view, deviceId) {
+  if (!view || !deviceId) return;
+  const script = `
+    (async () => {
+      try { await navigator.mediaDevices.getUserMedia({audio:true}); } catch {}
+      const id = ${JSON.stringify(deviceId)};
+      const apply = el => { if (typeof el.setSinkId === 'function') { try { el.setSinkId(id); } catch {} } };
+      const setAll = () => document.querySelectorAll('audio,video').forEach(apply);
+      setAll();
+      new MutationObserver(m => m.forEach(r => r.addedNodes.forEach(n => {
+        if (n.tagName === 'AUDIO' || n.tagName === 'VIDEO') apply(n);
+      }))).observe(document.documentElement, {childList:true, subtree:true});
+    })();
+  `;
+  try { view.webContents.executeJavaScript(script, true); } catch {}
+}
+
 const URLs = [
   'https://xbox.com/play',
   'https://xbox.com/play',
@@ -217,6 +234,12 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  const audioDevice = profileStore.getAudio(slot);
+  if (audioDevice) {
+    view.webContents.on('dom-ready', () => {
+      applyAudioOutput(view, audioDevice);
+    });
+  }
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -278,7 +301,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: profileStore.getAudio(index)
   };
 }
 
@@ -348,6 +372,12 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  profileStore.assignAudio(index, deviceId);
+  applyAudioOutput(views[index], deviceId);
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
