@@ -2,6 +2,7 @@ const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMai
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const { installAudioSink } = require('./lib/audio');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 
@@ -203,7 +204,7 @@ const URLs = [
   'https://xbox.com/play'
 ];
 
-function createView(x, y, width, height, slot, profileId, controllerIndex) {
+function createView(x, y, width, height, slot, profileId, controllerIndex, audioDevice) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
   const view = new BrowserView({
     webPreferences: {
@@ -217,6 +218,7 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
+  installAudioSink(view.webContents, audioDevice);
   installBetterXcloud(view.webContents);
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
@@ -255,7 +257,7 @@ function createWindow() {
     const audio = profileStore.getAudio(i);
     audioAssignments[i] = audio ?? audioAssignments[i];
     profileStore.assignAudio(i, audioAssignments[i]);
-    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
+    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i], audioAssignments[i]);
     if (audioAssignments[i]) {
       try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
     }
@@ -306,8 +308,8 @@ function reloadView(slot) {
   destroyView(win, views[slot]);
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
-  const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
   const audio = audioAssignments[slot];
+  const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller, audio);
   if (audio) {
     try { view.webContents.setAudioOutputDevice(audio); } catch {}
   }
