@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
-const { destroyView } = require('./lib/view-utils');
+const { destroyView, attachViewWithAudio } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -256,10 +256,7 @@ function createWindow() {
     audioAssignments[i] = audio ?? audioAssignments[i];
     profileStore.assignAudio(i, audioAssignments[i]);
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
-    if (audioAssignments[i]) {
-      try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
-    }
-    win.addBrowserView(view);
+    attachViewWithAudio(win, view, audioAssignments[i]);
     views[i] = view;
   });
 }
@@ -307,11 +304,7 @@ function reloadView(slot) {
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
-  const audio = audioAssignments[slot];
-  if (audio) {
-    try { view.webContents.setAudioOutputDevice(audio); } catch {}
-  }
-  win.addBrowserView(view);
+  attachViewWithAudio(win, view, audioAssignments[slot]);
   views[slot] = view;
 }
 
