@@ -202,7 +202,7 @@ const URLs = [
   'https://xbox.com/play'
 ];
 
-function createView(x, y, width, height, slot, profileId, controllerIndex) {
+function createView(x, y, width, height, slot, profileId, controllerIndex, audioDevice) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
   const view = new BrowserView({
     webPreferences: {
@@ -217,6 +217,9 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  if (audioDevice) {
+    try { view.webContents.setAudioOutputDeviceId(audioDevice); } catch {}
+  }
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -251,7 +254,8 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
-    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
+    const audio = profileStore.getAudio(i);
+    const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i], audio);
     win.addBrowserView(view);
     views[i] = view;
   });
@@ -278,7 +282,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudioDevice: profileStore.getAudio(index) || ''
   };
 }
 
@@ -298,7 +303,8 @@ function reloadView(slot) {
   destroyView(win, views[slot]);
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
-  const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
+  const audio = profileStore.getAudio(slot);
+  const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller, audio);
   win.addBrowserView(view);
   views[slot] = view;
 }
@@ -348,6 +354,15 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  profileStore.assignAudio(index, deviceId);
+  const view = views[index];
+  if (view) {
+    try { view.webContents.setAudioOutputDeviceId(deviceId); } catch {}
+  }
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
