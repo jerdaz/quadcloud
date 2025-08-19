@@ -12,7 +12,7 @@ Electron app that splits the display into four isolated browser sessions for xCl
    powershell -Command "Invoke-WebRequest -Uri https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js -OutFile better-xcloud.user.js"
    ```
 
-4. **Start the app** – run `start.bat`. The script updates the source from GitHub, installs the latest Electron and dependencies, and launches the application.
+4. **Start the app** – run `quadcloud.bat`. The script updates the source from GitHub, installs the latest Electron and dependencies, and launches the application.
 
 ## Linux setup (Debian/Ubuntu)
 
