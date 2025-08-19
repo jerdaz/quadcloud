@@ -9,9 +9,9 @@ set TMP_DIR=%TEMP%\quadcloud_update
 echo Updating source...
 if exist "%TMP_DIR%" rd /s /q "%TMP_DIR%"
 mkdir "%TMP_DIR%"
-curl -L %REPO_URL%/archive/refs/heads/%BRANCH%.zip -o "%TMP_DIR%\update.zip"
-powershell -NoLogo -NoProfile -Command "Expand-Archive -Path '%TMP_DIR%\update.zip' -DestinationPath '%TMP_DIR%'"
-xcopy "%TMP_DIR%\quadcloud-%BRANCH%\*" . /E /Y >nul
+curl -L "%REPO_URL%/archive/refs/heads/%BRANCH%.tar.gz" -o "%TMP_DIR%\update.tar.gz"
+tar -xzf "%TMP_DIR%\update.tar.gz" -C "%TMP_DIR%" --strip-components=1 --exclude="*/node_modules/*"
+xcopy "%TMP_DIR%\*" . /E /Y >nul
 rd /s /q "%TMP_DIR%"
 
 echo Installing latest Electron...
