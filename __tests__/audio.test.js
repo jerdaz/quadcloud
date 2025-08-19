@@ -1,18 +1,13 @@
 const { applyAudioOutput, allowSpeakerSelection } = require('../lib/audio');
 
 describe('audio utils', () => {
-  test('applyAudioOutput uses native API when available', () => {
-    let usedId = null;
-    const wc = { setAudioOutputDeviceId: id => { usedId = id; } };
-    applyAudioOutput(wc, 'dev123');
-    expect(usedId).toBe('dev123');
-  });
-
-  test('applyAudioOutput falls back to sink script', () => {
+  test('applyAudioOutput injects sink override script', () => {
     const scripts = [];
     const wc = { executeJavaScript: s => { scripts.push(s); } };
-    applyAudioOutput(wc, 'dev123');
-    expect(scripts[0]).toContain("setSinkId('dev123')");
+    applyAudioOutput(wc, "dev'123");
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]).toContain("window.__audioSink = 'dev\\'123'");
+    expect(scripts[0]).toContain('setSinkId');
   });
 
   test('allowSpeakerSelection grants permission', () => {
