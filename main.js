@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
-const { destroyView, closeConfigView } = require('./lib/view-utils');
+const { destroyView, closeConfigView, setAudioSink } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -204,6 +204,15 @@ const URLs = [
 
 function createView(x, y, width, height, slot, profileId, controllerIndex) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
+  try {
+    viewSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'speaker-selection') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+  } catch {}
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
@@ -348,6 +357,12 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  const view = views[index];
+  if (view) setAudioSink(view.webContents, deviceId);
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
