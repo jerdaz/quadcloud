@@ -4,6 +4,7 @@ const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
+const { applyAudioOutput, allowSpeakerSelection } = require('./lib/audio');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -350,11 +351,19 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   reloadView(index);
 });
 
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  const view = views[index];
+  if (view && deviceId) {
+    applyAudioOutput(view.webContents, deviceId);
+  }
+});
+
 ipcMain.on('close-config', (_e, { index }) => {
   closeConfigView(win, configViews, index);
 });
 
 app.whenReady().then(() => {
+  allowSpeakerSelection(session.defaultSession);
   profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
   createWindow();
   registerShortcuts();
