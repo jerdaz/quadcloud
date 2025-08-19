@@ -195,6 +195,35 @@ function installBetterXcloud(wc) {
   });
 }
 
+function applyAudioSinkId(wc, sinkId) {
+  if (!sinkId) return;
+  const escaped = JSON.stringify(sinkId);
+  const script = `(() => {
+    const set = el => { if (typeof el.setSinkId === 'function') { try { el.setSinkId(${escaped}); } catch {} } };
+    const applyAll = () => { document.querySelectorAll('video,audio').forEach(set); };
+    applyAll();
+    const mo = new MutationObserver(muts => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (n.tagName && /^(video|audio)$/i.test(n.tagName)) set(n);
+          if (n.querySelectorAll) n.querySelectorAll('video,audio').forEach(set);
+        }
+      }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+  })()`;
+  try { wc.executeJavaScript(script, true); } catch {}
+}
+
+function installAudioOverride(wc) {
+  wc.on('dom-ready', () => {
+    if (wc.audioSinkId) applyAudioSinkId(wc, wc.audioSinkId);
+  });
+  wc.on('did-start-navigation', () => {
+    if (wc.audioSinkId) applyAudioSinkId(wc, wc.audioSinkId);
+  });
+}
+
 const URLs = [
   'https://xbox.com/play',
   'https://xbox.com/play',
@@ -217,6 +246,8 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  installAudioOverride(view.webContents);
+  view.webContents.audioSinkId = profileStore.getAudio(slot);
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -278,7 +309,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: profileStore.getAudio(index)
   };
 }
 
@@ -348,6 +380,16 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, sinkId }) => {
+  profileStore.assignAudio(index, sinkId);
+  const view = views[index];
+  if (view) {
+    view.webContents.audioSinkId = sinkId;
+    applyAudioSinkId(view.webContents, sinkId);
+  }
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
