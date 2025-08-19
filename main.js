@@ -321,7 +321,7 @@ function registerShortcuts() {
 }
 
 ipcMain.on('config-ready', (e) => {
-  const index = configViews.findIndex(cv => cv.webContents === e.sender);
+  const index = configViews.findIndex(cv => cv && cv.webContents === e.sender);
   if (index !== -1) {
     e.sender.send('init', gatherConfigData(index));
   }
