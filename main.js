@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
-const { destroyView } = require('./lib/view-utils');
+const { destroyView, closeConfigView } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -351,24 +351,26 @@ ipcMain.on('create-profile', (_e, { index, name }) => {
 
 ipcMain.on('select-profile', (_e, { index, profileId }) => {
   profileStore.assignProfile(index, profileId);
+  closeConfigView(win, configViews, index);
   reloadView(index);
 });
 
 ipcMain.on('select-controller', (_e, { index, controller }) => {
   controllerAssignments[index] = controller;
   profileStore.assignController(index, controller);
+  closeConfigView(win, configViews, index);
   reloadView(index);
 });
 
 ipcMain.on('select-audio', (_e, { index, deviceId }) => {
   audioAssignments[index] = deviceId;
   profileStore.assignAudio(index, deviceId);
+  closeConfigView(win, configViews, index);
   reloadView(index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
-  const cfg = configViews[index];
-  if (cfg) win.removeBrowserView(cfg);
+  closeConfigView(win, configViews, index);
 });
 
 app.whenReady().then(() => {
