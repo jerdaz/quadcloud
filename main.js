@@ -14,6 +14,7 @@ let profileStore;
 const views = [];
 const configViews = [];
 let controllerAssignments = [0, 1, 2, 3];
+let audioAssignments = [];
 let win;
 let viewWidth = 0;
 let viewHeight = 0;
@@ -204,6 +205,10 @@ const URLs = [
 
 function createView(x, y, width, height, slot, profileId, controllerIndex) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
+  viewSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    if (permission === 'setSpeaker') return callback(true);
+    callback(false);
+  });
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
@@ -217,6 +222,10 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  view.webContents.on('dom-ready', () => {
+    const deviceId = audioAssignments[slot];
+    if (deviceId) view.webContents.send('set-audio-device', deviceId);
+  });
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -278,7 +287,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: audioAssignments[index]
   };
 }
 
@@ -348,6 +358,13 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioAssignments[index] = deviceId;
+  const view = views[index];
+  if (view) view.webContents.send('set-audio-device', deviceId);
+  closeConfigView(win, configViews, index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {

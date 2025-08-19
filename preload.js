@@ -1,3 +1,4 @@
+const { ipcRenderer } = require('electron');
 let hideCursorTimeout;
 
 function resetCursorTimeout() {
@@ -16,4 +17,19 @@ window.addEventListener('keydown', resetCursorTimeout);
 
 window.addEventListener('DOMContentLoaded', () => {
   resetCursorTimeout();
+});
+
+ipcRenderer.on('set-audio-device', (_e, deviceId) => {
+  const apply = () => {
+    const videos = document.querySelectorAll('video');
+    videos.forEach(v => {
+      if (typeof v.setSinkId === 'function') {
+        try { v.setSinkId(deviceId); } catch {}
+      }
+    });
+  };
+  apply();
+  const mo = new MutationObserver(apply);
+  mo.observe(document, { childList: true, subtree: true });
+  setTimeout(() => mo.disconnect(), 10000);
 });
