@@ -4,6 +4,7 @@ const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
+const { overrideAudioSink } = require('./lib/audio-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -14,6 +15,7 @@ let profileStore;
 const views = [];
 const configViews = [];
 let controllerAssignments = [0, 1, 2, 3];
+let audioAssignments = [];
 let win;
 let viewWidth = 0;
 let viewHeight = 0;
@@ -251,9 +253,12 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
+    const audio = profileStore.getAudio(i);
+    audioAssignments[i] = audio;
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
     win.addBrowserView(view);
     views[i] = view;
+    if (audioAssignments[i]) overrideAudioSink(view.webContents, audioAssignments[i]);
   });
 }
 
@@ -278,7 +283,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: audioAssignments[index]
   };
 }
 
@@ -301,6 +307,7 @@ function reloadView(slot) {
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
   win.addBrowserView(view);
   views[slot] = view;
+  if (audioAssignments[slot]) overrideAudioSink(view.webContents, audioAssignments[slot]);
 }
 
 function registerShortcuts() {
@@ -350,11 +357,25 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   reloadView(index);
 });
 
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioAssignments[index] = deviceId;
+  profileStore.assignAudio(index, deviceId);
+  closeConfigView(win, configViews, index);
+  const view = views[index];
+  if (view) overrideAudioSink(view.webContents, deviceId);
+});
+
 ipcMain.on('close-config', (_e, { index }) => {
   closeConfigView(win, configViews, index);
 });
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+    if (permission === 'set_speaker') {
+      return callback(true);
+    }
+    callback(true);
+  });
   profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
   createWindow();
   registerShortcuts();
