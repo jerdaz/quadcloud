@@ -7,5 +7,6 @@ describe('getAudioSinkPatch', () => {
     expect(patch).toContain(id);
     expect(patch).toMatch(/setSinkId/);
     expect(patch).toMatch(/AudioContext/);
+    expect(patch).toMatch(/window\.Audio/);
   });
 });

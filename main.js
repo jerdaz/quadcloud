@@ -259,7 +259,12 @@ function createWindow() {
     profileStore.assignAudio(i, audioAssignments[i]);
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i], audioAssignments[i]);
     if (audioAssignments[i]) {
-      try { view.webContents.setAudioOutputDevice(audioAssignments[i]); } catch {}
+      try {
+        view.webContents.setAudioOutputDevice(audioAssignments[i]);
+        console.debug('[quadcloud] setAudioOutputDevice slot', i, audioAssignments[i]);
+      } catch (err) {
+        console.warn('[quadcloud] setAudioOutputDevice failed', err);
+      }
     }
     win.addBrowserView(view);
     views[i] = view;
@@ -311,7 +316,12 @@ function reloadView(slot) {
   const audio = audioAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller, audio);
   if (audio) {
-    try { view.webContents.setAudioOutputDevice(audio); } catch {}
+    try {
+      view.webContents.setAudioOutputDevice(audio);
+      console.debug('[quadcloud] setAudioOutputDevice slot', slot, audio);
+    } catch (err) {
+      console.warn('[quadcloud] setAudioOutputDevice failed', err);
+    }
   }
   win.addBrowserView(view);
   views[slot] = view;
