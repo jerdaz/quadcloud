@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
+const { destroyView } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -302,8 +303,7 @@ function toggleConfig(index) {
 
 function reloadView(slot) {
   const pos = positions[slot];
-  const old = views[slot];
-  if (old) win.removeBrowserView(old);
+  destroyView(win, views[slot]);
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
@@ -363,8 +363,7 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
 ipcMain.on('select-audio', (_e, { index, deviceId }) => {
   audioAssignments[index] = deviceId;
   profileStore.assignAudio(index, deviceId);
-  const view = views[index];
-  try { view.webContents.setAudioOutputDevice(deviceId); } catch {}
+  reloadView(index);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
