@@ -4,43 +4,31 @@ Electron app that splits the display into four isolated browser sessions for xCl
 
 ## Windows setup
 
-1. **Install Git** – download and run the installer from [git-scm.com](https://git-scm.com/download/win) and accept the defaults.
-2. **Install Node.js** – download the LTS version from [nodejs.org](https://nodejs.org) and run the installer.
-3. Open **Git Bash** (installed with Git) or **Command Prompt**.
-4. Clone the repository and enter the folder:
-
-   ```bash
-   git clone https://github.com/your-username/quadcloud.git
-   cd quadcloud
-   ```
-
-5. (Optional) Download the Better XCloud script:
+1. **Install Node.js** – download the LTS version from [nodejs.org](https://nodejs.org) and run the installer.
+2. **Download the source** – grab the ZIP of this repository from GitHub and extract it.
+3. (Optional) Download the Better XCloud script:
 
    ```powershell
    powershell -Command "Invoke-WebRequest -Uri https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js -OutFile better-xcloud.user.js"
    ```
 
-6. Install dependencies and start the app:
-
-   ```bash
-   npm install
-   npm start
-   ```
+4. **Start the app** – run `quadcloud.bat`. On the first launch of each day the script updates Electron and, when the main branch has new commits, refreshes the source and installs dependencies before starting the application.
 
 ## Linux setup (Debian/Ubuntu)
 
-1. Install Git and Node.js:
+1. Install Node.js and required tools:
 
    ```bash
    sudo apt update
-   sudo apt install -y git nodejs npm
+   sudo apt install -y nodejs npm curl tar
    ```
 
-2. Clone the repository and enter the folder:
+2. Download and extract the source:
 
    ```bash
-   git clone https://github.com/your-username/quadcloud.git
-   cd quadcloud
+   curl -L -o quadcloud.tar.gz https://github.com/jerdaz/quadcloud/archive/refs/heads/main.tar.gz
+   tar -xzf quadcloud.tar.gz
+   cd quadcloud-main
    ```
 
 3. (Optional) Download the Better XCloud script:
@@ -49,11 +37,11 @@ Electron app that splits the display into four isolated browser sessions for xCl
    curl -L -o better-xcloud.user.js https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js
    ```
 
-4. Install dependencies and start the app:
+4. Start the app (updates run only once per day):
 
    ```bash
-   npm install
-   npm start
+   chmod +x start.sh
+   ./start.sh
    ```
 ## Usage
 
