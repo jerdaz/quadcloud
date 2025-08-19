@@ -19,6 +19,8 @@ let viewWidth = 0;
 let viewHeight = 0;
 let positions = [];
 
+const { allowMediaPermissions } = require('./lib/permissions');
+
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
 
@@ -221,6 +223,7 @@ const URLs = [
 
 function createView(x, y, width, height, slot, profileId, controllerIndex) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
+  allowMediaPermissions(viewSession);
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
@@ -386,6 +389,7 @@ ipcMain.on('close-config', (_e, { index }) => {
 
 app.whenReady().then(() => {
   profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
+  allowMediaPermissions(session.defaultSession);
   createWindow();
   registerShortcuts();
 });
