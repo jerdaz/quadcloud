@@ -3,26 +3,74 @@
 <head>
   <meta charset="utf-8">
   <title>Player Settings</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: sans-serif;
+      background: rgba(0, 0, 0, 0.5);
+      color: #000;
+    }
+    #panel {
+      background: #fff;
+      border: 1px solid #333;
+      padding: 16px;
+      border-radius: 8px;
+      min-width: 300px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .row label {
+      flex: 1;
+      margin-right: 8px;
+    }
+    .row select,
+    .row input {
+      flex: 2;
+    }
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+    button {
+      margin-left: 8px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Player Settings</h1>
-  <div>
-    <label>Profile name <input id="profileName"></label>
-    <button id="saveName">Save Name</button>
+  <div id="panel">
+    <h1>Player Settings</h1>
+    <div class="row">
+      <label for="profileName">Profile name</label>
+      <input id="profileName">
+      <button id="saveName">Save Name</button>
+      <button id="newProfile">Add Profile</button>
+    </div>
+    <div class="row">
+      <label for="profileSelect">Profile</label>
+      <select id="profileSelect"></select>
+      <button id="applyProfile">Apply</button>
+    </div>
+    <div class="row">
+      <label for="controllerSelect">Controller</label>
+      <select id="controllerSelect"></select>
+      <button id="applyController">Apply</button>
+    </div>
+    <div class="row">
+      <label for="audioSelect">Audio Device</label>
+      <select id="audioSelect"></select>
+      <button id="applyAudio">Apply</button>
+    </div>
+    <div style="text-align: right;">
+      <button id="closeBtn">Close</button>
+    </div>
   </div>
-  <div>
-    <label>Profile <select id="profileSelect"></select></label>
-    <button id="applyProfile">Apply Profile</button>
-  </div>
-  <div>
-    <label>Controller <select id="controllerSelect"></select></label>
-    <button id="applyController">Apply Controller</button>
-  </div>
-  <div>
-    <label>Audio Device <select id="audioSelect"></select></label>
-    <button id="applyAudio">Apply Audio</button>
-  </div>
-  <button id="closeBtn">Close</button>
   <script src="config.js"></script>
 </body>
 </html>

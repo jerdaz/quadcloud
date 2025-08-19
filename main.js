@@ -332,6 +332,14 @@ ipcMain.on('rename-profile', (_e, { index, name }) => {
   profileStore.renameProfile(id, name);
 });
 
+ipcMain.on('create-profile', (_e, { index, name }) => {
+  const id = profileStore.createProfile(name);
+  profileStore.assignProfile(index, id);
+  reloadView(index);
+  const cfg = configViews[index];
+  if (cfg) cfg.webContents.send('init', gatherConfigData(index));
+});
+
 ipcMain.on('select-profile', (_e, { index, profileId }) => {
   profileStore.assignProfile(index, profileId);
   reloadView(index);

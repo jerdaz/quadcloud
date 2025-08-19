@@ -61,6 +61,10 @@ document.getElementById('applyAudio').addEventListener('click', () => {
   ipcRenderer.send('select-audio', { index: viewIndex, deviceId: document.getElementById('audioSelect').value });
 });
 
+document.getElementById('newProfile').addEventListener('click', () => {
+  ipcRenderer.send('create-profile', { index: viewIndex, name: document.getElementById('profileName').value });
+});
+
 document.getElementById('closeBtn').addEventListener('click', () => {
   ipcRenderer.send('close-config', { index: viewIndex });
 });

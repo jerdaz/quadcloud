@@ -67,7 +67,7 @@ The app automatically splits the active display into four equal quadrants based 
 
 To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, the app spoofs focus in the main world of all `xbox.com` frames.
 
-Each quadrant also exposes a configuration panel (Ctrl+Alt+1–4) where you can rename or switch profiles, choose a controller, and pick an audio output device. Profile selections persist across sessions.
+Each quadrant also exposes a configuration panel (Ctrl+Alt+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, choose a controller, and pick an audio output device. Profile selections persist across sessions.
 
 ## Notes
 

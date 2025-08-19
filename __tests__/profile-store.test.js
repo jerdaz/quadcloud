@@ -17,4 +17,16 @@ describe('ProfileStore', () => {
     expect(store2.getAssignment(0)).toBe(id);
     expect(store2.getController(0)).toBe(2);
   });
+
+  test('allows creating more than four profiles', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'profiles-'));
+    const file = path.join(tmp, 'profiles.json');
+    const store1 = new ProfileStore(file);
+    for (let i = 0; i < 6; i++) {
+      store1.createProfile(`P${i}`);
+    }
+
+    const store2 = new ProfileStore(file);
+    expect(Object.keys(store2.getProfiles())).toHaveLength(6);
+  });
 });
