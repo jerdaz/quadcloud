@@ -19,6 +19,7 @@ let win;
 let viewWidth = 0;
 let viewHeight = 0;
 let positions = [];
+const audioForSlot = {};
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -205,6 +206,7 @@ const URLs = [
 
 function createView(x, y, width, height, slot, profileId, controllerIndex) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
+  allowSpeakerSelection(viewSession);
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
@@ -220,6 +222,14 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installBetterXcloud(view.webContents);
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
+}
+
+function wireAudioReapply(view, slot) {
+  const wc = view.webContents;
+  wc.on('did-finish-load', () => {
+    const id = audioForSlot[slot];
+    if (id) applyAudioOutput(wc, id);
+  });
 }
 
 function createWindow() {
@@ -253,8 +263,10 @@ function createWindow() {
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
+    wireAudioReapply(view, i);
     win.addBrowserView(view);
     views[i] = view;
+    if (audioForSlot[i]) applyAudioOutput(view.webContents, audioForSlot[i]);
   });
 }
 
@@ -300,8 +312,10 @@ function reloadView(slot) {
   const profileId = profileStore.getAssignment(slot);
   const controller = controllerAssignments[slot];
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
+  wireAudioReapply(view, slot);
   win.addBrowserView(view);
   views[slot] = view;
+  if (audioForSlot[slot]) applyAudioOutput(view.webContents, audioForSlot[slot]);
 }
 
 function registerShortcuts() {
@@ -352,6 +366,7 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
 });
 
 ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  audioForSlot[index] = deviceId;
   const view = views[index];
   if (view && deviceId) {
     applyAudioOutput(view.webContents, deviceId);
