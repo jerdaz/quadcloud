@@ -1,5 +1,6 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -188,6 +189,48 @@ function installGamepadIsolation(wc, index) {
   });
 }
 
+const BETTER_XCLOUD_PATH = path.join(__dirname, 'better-xcloud.user.js');
+let BETTER_XCLOUD_SCRIPT = null;
+try {
+  if (fs.existsSync(BETTER_XCLOUD_PATH)) {
+    BETTER_XCLOUD_SCRIPT = fs.readFileSync(BETTER_XCLOUD_PATH, 'utf8');
+  }
+} catch {}
+
+function injectBetterXcloudIntoFrame(frame) {
+  if (!BETTER_XCLOUD_SCRIPT) return;
+  try { frame.executeJavaScript(BETTER_XCLOUD_SCRIPT, true); } catch {}
+}
+
+function installBetterXcloud(wc) {
+  if (!BETTER_XCLOUD_SCRIPT) return;
+  wc.on('dom-ready', () => {
+    try {
+      const mf = wc.mainFrame;
+      injectBetterXcloudIntoFrame(mf);
+      for (const f of mf.frames) injectBetterXcloudIntoFrame(f);
+    } catch {}
+  });
+
+  wc.on('did-frame-navigate', (_e, details) => {
+    try {
+      const f = wc.mainFrame.frames.find(fr => fr.frameTreeNodeId === details.frameTreeNodeId);
+      if (f) injectBetterXcloudIntoFrame(f);
+    } catch {}
+  });
+
+  wc.on('frame-created', (_e, details) => {
+    try { injectBetterXcloudIntoFrame(details.frame); } catch {}
+  });
+
+  wc.on('did-start-navigation', () => {
+    try {
+      const mf = wc.mainFrame;
+      injectBetterXcloudIntoFrame(mf);
+    } catch {}
+  });
+}
+
 const URLs = [
   'https://xbox.com/play',
   'https://xbox.com/play',
@@ -209,6 +252,7 @@ function createView(x, y, width, height, index) {
   view.webContents.setBackgroundThrottling(false);
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, index);
+  installBetterXcloud(view.webContents);
   view.webContents.loadURL(URLs[index]);
   return view;
 }

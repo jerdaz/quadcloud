@@ -14,7 +14,13 @@ Electron app that splits the display into four isolated browser sessions for xCl
    cd quadcloud
    ```
 
-5. Install dependencies and start the app:
+5. (Optional) Download the Better XCloud script:
+
+   ```powershell
+   powershell -Command "Invoke-WebRequest -Uri https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js -OutFile better-xcloud.user.js"
+   ```
+
+6. Install dependencies and start the app:
 
    ```bash
    npm install
@@ -37,7 +43,13 @@ Electron app that splits the display into four isolated browser sessions for xCl
    cd quadcloud
    ```
 
-3. Install dependencies and start the app:
+3. (Optional) Download the Better XCloud script:
+
+   ```bash
+   curl -L -o better-xcloud.user.js https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js
+   ```
+
+4. Install dependencies and start the app:
 
    ```bash
    npm install
