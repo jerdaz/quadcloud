@@ -84,10 +84,6 @@ const XFOCUS_PATCH = `
 
 function injectPatchIntoFrame(frame) {
   try {
-    const url = frame.url || '';
-    let host = '';
-    try { host = new URL(url).hostname; } catch {}
-    if (!host || !XBOX_HOST_RE.test(host)) return;
     return frame.executeJavaScript(XFOCUS_PATCH, true);
   } catch {
     // ignore

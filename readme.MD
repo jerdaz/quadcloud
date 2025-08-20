@@ -1,6 +1,6 @@
 # Quad Play
 
-Electron app that splits the display into four isolated browser sessions for xCloud or Remote Play. Each view scales to half of the screen's width and height—for example, on a 4K screen each view is 1080p, and on a 1080p screen each view is 540p. Every view uses its own persistent profile and only listens to a single controller.
+Electron app that splits the display into four isolated browser sessions for xCloud or Remote Play. Each view scales to half of the screen's width and height—for example, on a 4K screen each view is 1080p, and on a 1080p screen each view is 540p. Every view uses its own persistent profile and only listens to a single controller. Controller navigation overlays remain visible in all quadrants even when they're not the active window.
 
 ## Windows setup
 
