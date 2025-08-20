@@ -16,7 +16,7 @@ test('registers shortcut to open developer tools', () => {
     callbacks[accelerator] = cb;
   });
 
-  registerShortcuts(views, toggleConfig);
+  registerShortcuts(views, toggleConfig, () => 0);
 
   expect(globalShortcut.register).toHaveBeenCalledWith(
     'CommandOrControl+Alt+I',
@@ -33,9 +33,10 @@ test('registers shortcut to open developer tools', () => {
 });
 
 test('registers shortcut to open audio selection dialog', () => {
-  const views = [];
+  const views = [{}];
   const toggleConfig = jest.fn();
   const callbacks = {};
+  const getController = jest.fn().mockReturnValue(1);
 
   globalShortcut.register.mockClear();
   webContents.getFocusedWebContents.mockReset();
@@ -44,7 +45,7 @@ test('registers shortcut to open audio selection dialog', () => {
     callbacks[accelerator] = cb;
   });
 
-  registerShortcuts(views, toggleConfig);
+  registerShortcuts(views, toggleConfig, getController);
 
   expect(globalShortcut.register).toHaveBeenCalledWith(
     'CommandOrControl+S',
@@ -53,11 +54,10 @@ test('registers shortcut to open audio selection dialog', () => {
 
   const executeJavaScript = jest.fn();
   webContents.getFocusedWebContents.mockReturnValue({ executeJavaScript });
-
   callbacks['CommandOrControl+S']();
 
   expect(webContents.getFocusedWebContents).toHaveBeenCalled();
-  expect(executeJavaScript).toHaveBeenCalled();
+  expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller 2'));
 });
 
 test('focus shortcut uses latest view reference', () => {
@@ -71,7 +71,7 @@ test('focus shortcut uses latest view reference', () => {
     callbacks[accel] = cb;
   });
 
-  registerShortcuts(views, toggleConfig);
+  registerShortcuts(views, toggleConfig, () => 0);
 
   // replace view after registration
   const view2 = { webContents: { focus: jest.fn() } };
