@@ -85,7 +85,10 @@ test('registers shortcut to auto-apply audio selection for all quadrants', () =>
 
   expect(view1.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller'));
   expect(view2.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller 2'));
-  expect(view1.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('apply.click'));
+  const js = view1.webContents.executeJavaScript.mock.calls[0][0];
+  expect(js).toContain('enumerateDevices');
+  expect(js).not.toContain('qc-audio-dialog');
+  expect(js).not.toContain('apply.click');
 });
 
 test('focus shortcut uses latest view reference', () => {
