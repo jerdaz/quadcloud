@@ -204,6 +204,25 @@ const URLs = [
 
 function createView(x, y, width, height, slot, profileId, controllerIndex) {
   const viewSession = session.fromPartition(`persist:${profileId}`);
+  if (!viewSession.__quadPermHandlersInstalled) {
+    viewSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+      let host = '';
+      try { host = new URL(details.requestingUrl).hostname; } catch {}
+      if (host && XBOX_HOST_RE.test(host) && (permission === 'media' || permission === 'speaker-selection')) {
+        return callback(true);
+      }
+      callback(false);
+    });
+    viewSession.setPermissionCheckHandler((_wc, permission, requestingOrigin) => {
+      let host = '';
+      try { host = new URL(requestingOrigin).hostname; } catch {}
+      if (host && XBOX_HOST_RE.test(host) && (permission === 'media' || permission === 'speaker-selection')) {
+        return true;
+      }
+      return false;
+    });
+    viewSession.__quadPermHandlersInstalled = true;
+  }
   const view = new BrowserView({
     webPreferences: {
       session: viewSession,
@@ -217,6 +236,12 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  const audioDevice = profileStore.getAudio(slot);
+  if (audioDevice) {
+    const apply = () => applyAudioOutput(slot, audioDevice);
+    view.webContents.on('did-finish-load', apply);
+    view.webContents.on('did-frame-finish-load', apply);
+  }
   view.webContents.loadURL(URLs[slot % URLs.length]);
   return view;
 }
@@ -278,7 +303,8 @@ function gatherConfigData(index) {
     profiles: profileStore.getProfiles(),
     currentProfile: profileId,
     controllers: [0,1,2,3],
-    currentController: controllerAssignments[index]
+    currentController: controllerAssignments[index],
+    currentAudio: profileStore.getAudio(index)
   };
 }
 
@@ -301,6 +327,27 @@ function reloadView(slot) {
   const view = createView(pos.x, pos.y, viewWidth, viewHeight, slot, profileId, controller);
   win.addBrowserView(view);
   views[slot] = view;
+}
+
+function applyAudioOutput(index, deviceId) {
+  const view = views[index];
+  if (!view) return;
+  const js = `
+    (async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
+          try { await navigator.mediaDevices.selectAudioOutput({ deviceId: '${deviceId}' }); } catch {}
+        }
+        const els = document.querySelectorAll('audio, video');
+        for (const el of els) {
+          if (typeof el.setSinkId === 'function') {
+            try { await el.setSinkId('${deviceId}'); } catch {}
+          }
+        }
+      } catch {}
+    })();
+  `;
+  try { view.webContents.executeJavaScript(js); } catch {}
 }
 
 function registerShortcuts() {
@@ -348,6 +395,12 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('select-audio', (_e, { index, deviceId }) => {
+  profileStore.assignAudio(index, deviceId);
+  closeConfigView(win, configViews, index);
+  applyAudioOutput(index, deviceId);
 });
 
 ipcMain.on('close-config', (_e, { index }) => {
