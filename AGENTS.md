@@ -8,7 +8,7 @@ This repository contains an Electron application that opens four browser views f
 - Unit tests are written with **Jest**. Run them with `npm test`.
 - When changing or adding functionality:
   - Add or update unit tests covering the new behavior.
-  - Update the documentation in `readme.MD` as needed.
+  - Update the documentation in `readme.MD` as needed, keeping it focused on user-facing information and omitting under-the-hood implementation details.
   - Execute `npm test` and ensure all tests pass before committing.
 - Keep dependencies and scripts in `package.json` up to date when adding tools or libraries.
 

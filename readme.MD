@@ -51,16 +51,14 @@ npm start
 ```
 
 
-The app automatically splits the active display into four equal quadrants based on the screen resolution. Each quadrant loads `https://xbox.com/play` by default. Adjust the `URLs` array in [`main.js`](main.js) to point to other streaming services if needed.
-
-To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, the app spoofs focus in the main world of all `xbox.com` frames.
+The app automatically splits the active display into four equal quadrants based on the screen resolution. Each quadrant loads `https://xbox.com/play` by default, and you can point them to other streaming services if needed.
 
 Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, choose a controller, and enable or disable the quadrant. Disabling removes the quadrant's browser view but the setting persists across sessions. You can still open the panel later to re‑enable the quadrant. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream; when a headset is plugged into an Xbox controller, the matching "Xbox Controller" device is preselected automatically. Press Ctrl+A at any time to automatically reopen the selection dialog in all quadrants and apply the preselected device—useful after plugging or unplugging a headset.
 
 ## Notes
 
 - Works on Windows and Linux.
-- Gamepad filtering relies on the Gamepad API. Streaming services that read controllers directly from the OS may require additional tools for full isolation.
+- Some streaming services that read controllers directly from the OS may require additional tools for full isolation.
 
 ## Hotkeys
 
