@@ -1,6 +1,5 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const registerShortcuts = require('./lib/register-shortcuts');
-const audioDialogJS = registerShortcuts.audioDialogJS;
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
@@ -20,10 +19,6 @@ let win;
 let viewWidth = 0;
 let viewHeight = 0;
 let positions = [];
-
-function controllerLabel(controller) {
-  return controller === 0 ? 'Xbox Controller' : `Xbox Controller ${controller + 1}`;
-}
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -242,12 +237,6 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
-  const autoAudio = () => {
-    const label = controllerLabel(controllerIndex);
-    try { view.webContents.executeJavaScript(audioDialogJS(label, true)); } catch {}
-  };
-  view.webContents.on('did-finish-load', autoAudio);
-  view.webContents.on('did-frame-finish-load', autoAudio);
   const audioDevice = profileStore.getAudio(slot);
   if (audioDevice) {
     const apply = () => applyAudioOutput(slot, audioDevice);
