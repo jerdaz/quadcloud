@@ -73,6 +73,7 @@ Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or
 - **Ctrl+Alt+2**: focus the top-right quadrant.
 - **Ctrl+Alt+3**: focus the bottom-left quadrant.
 - **Ctrl+Alt+4**: focus the bottom-right quadrant.
+- **Ctrl+Alt+I**: open developer tools for the focused view.
 
 ## Testing
 

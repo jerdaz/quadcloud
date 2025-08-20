@@ -1,4 +1,5 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
+const registerShortcuts = require('./lib/register-shortcuts');
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
@@ -350,20 +351,6 @@ function applyAudioOutput(index, deviceId) {
   try { view.webContents.executeJavaScript(js); } catch {}
 }
 
-function registerShortcuts() {
-  globalShortcut.register('CommandOrControl+Q', () => {
-    app.quit();
-  });
-  views.forEach((view, i) => {
-    globalShortcut.register(`CommandOrControl+${i + 1}`, () => {
-      toggleConfig(i);
-    });
-    globalShortcut.register(`CommandOrControl+Alt+${i + 1}`, () => {
-      view.webContents.focus();
-    });
-  });
-}
-
 ipcMain.on('config-ready', (e) => {
   const index = configViews.findIndex(cv => cv && cv.webContents === e.sender);
   if (index !== -1) {
@@ -410,7 +397,7 @@ ipcMain.on('close-config', (_e, { index }) => {
 app.whenReady().then(() => {
   profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
   createWindow();
-  registerShortcuts();
+  registerShortcuts(views, toggleConfig);
 });
 
 app.on('will-quit', () => {
