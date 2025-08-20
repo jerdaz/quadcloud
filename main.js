@@ -5,11 +5,16 @@ const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
+const { applySecurityHeaders } = require('./lib/security');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+
+session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+  callback(applySecurityHeaders(details));
+});
 
 let profileStore;
 const views = [];

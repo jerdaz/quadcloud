@@ -61,6 +61,7 @@ Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or
 
 - Works on Windows and Linux.
 - Gamepad filtering relies on the Gamepad API. Streaming services that read controllers directly from the OS may require additional tools for full isolation.
+- Applies a Content Security Policy and permissions policy enabling microphone use and speaker selection for xCloud pages.
 
 ## Hotkeys
 
