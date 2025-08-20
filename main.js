@@ -5,6 +5,7 @@ const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
+const setMaxListeners = require('./lib/set-max-listeners');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -230,6 +231,7 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
       preload: path.join(__dirname, 'preload.js')
     }
   });
+  setMaxListeners(view.webContents);
   view.webContents.controllerIndex = controllerIndex;
   view.setBounds({ x, y, width, height });
   view.setAutoResize({ width: true, height: true });
@@ -290,15 +292,16 @@ positions.forEach((pos, i) => {
 function getConfigView(index) {
   let cfg = configViews[index];
   if (cfg) return cfg;
-  cfg = new BrowserView({
-    webPreferences: { nodeIntegration: true, contextIsolation: false }
-  });
-  cfg.setBounds({ x: positions[index].x, y: positions[index].y, width: viewWidth, height: viewHeight });
-  cfg.setAutoResize({ width: true, height: true });
-  cfg.webContents.loadFile(path.join(__dirname, 'assets', 'config.html'));
-  configViews[index] = cfg;
-  return cfg;
-}
+    cfg = new BrowserView({
+      webPreferences: { nodeIntegration: true, contextIsolation: false }
+    });
+    setMaxListeners(cfg.webContents);
+    cfg.setBounds({ x: positions[index].x, y: positions[index].y, width: viewWidth, height: viewHeight });
+    cfg.setAutoResize({ width: true, height: true });
+    cfg.webContents.loadFile(path.join(__dirname, 'assets', 'config.html'));
+    configViews[index] = cfg;
+    return cfg;
+  }
 
 function gatherConfigData(index) {
   const profileId = profileStore.getAssignment(index);
