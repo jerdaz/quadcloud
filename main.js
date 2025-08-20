@@ -3,6 +3,7 @@ const registerShortcuts = require('./lib/register-shortcuts');
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const { addCspHeaders } = require('./lib/security-headers');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 
@@ -10,6 +11,12 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+
+// Inject security headers for xCloud content
+session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+  const responseHeaders = addCspHeaders(details.url, details.responseHeaders);
+  callback({ responseHeaders });
+});
 
 let profileStore;
 const views = [];
