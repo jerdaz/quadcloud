@@ -60,6 +60,34 @@ test('registers shortcut to open audio selection dialog', () => {
   expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller 2'));
 });
 
+test('registers shortcut to auto-apply audio selection for all quadrants', () => {
+  const view1 = { webContents: { executeJavaScript: jest.fn() } };
+  const view2 = { webContents: { executeJavaScript: jest.fn() } };
+  const views = [view1, view2];
+  const toggleConfig = jest.fn();
+  const callbacks = {};
+  const getController = jest.fn().mockImplementation(i => i);
+
+  globalShortcut.register.mockClear();
+
+  globalShortcut.register.mockImplementation((accelerator, cb) => {
+    callbacks[accelerator] = cb;
+  });
+
+  registerShortcuts(views, toggleConfig, getController);
+
+  expect(globalShortcut.register).toHaveBeenCalledWith(
+    'CommandOrControl+A',
+    expect.any(Function)
+  );
+
+  callbacks['CommandOrControl+A']();
+
+  expect(view1.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller'));
+  expect(view2.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller 2'));
+  expect(view1.webContents.executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('apply.click'));
+});
+
 test('focus shortcut uses latest view reference', () => {
   const view1 = { webContents: { focus: jest.fn() } };
   const views = [view1];
