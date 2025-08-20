@@ -53,7 +53,7 @@ npm start
 
 The app automatically splits the active display into four equal quadrants based on the screen resolution. Each quadrant loads `https://xbox.com/play` by default, and you can point them to other streaming services if needed.
 
-Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, choose a controller, and enable or disable the quadrant. Disabling removes the quadrant's browser view but the setting persists across sessions. You can still open the panel later to re‑enable the quadrant. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream; when a headset is plugged into an Xbox controller, the matching "Xbox Controller" device is preselected automatically. Press Ctrl+A at any time to automatically reopen the selection dialog in all quadrants and apply the preselected device—useful after plugging or unplugging a headset.
+Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, choose a controller, and enable or disable the quadrant. Disabling removes the quadrant's browser view but the setting persists across sessions. You can still open the panel later to re‑enable the quadrant. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream; when a headset is plugged into an Xbox controller, the matching "Xbox Controller" device is preselected automatically. Press Ctrl+A at any time to silently apply the preselected device in all quadrants—useful after plugging or unplugging a headset without reopening the dialog.
 
 ## Notes
 
@@ -73,7 +73,7 @@ Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or
 - **Ctrl+Alt+4**: focus the bottom-right quadrant.
 - **Ctrl+Alt+I**: open developer tools for the focused view.
 - **Ctrl+S**: open the speaker selection dialog for the focused quadrant.
-- **Ctrl+A**: automatically apply the preferred audio device for all quadrants.
+- **Ctrl+A**: automatically apply the preferred audio device for all quadrants without showing a dialog.
 
 ## Testing
 
