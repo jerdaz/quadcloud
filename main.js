@@ -2,7 +2,7 @@ const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMai
 const registerShortcuts = require('./lib/register-shortcuts');
 const path = require('path');
 const fs = require('fs');
-const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const { XBOX_HOST_RE, getGamepadPatch, getControllerSlot } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 
@@ -382,6 +382,16 @@ ipcMain.on('select-controller', (_e, { index, controller }) => {
   profileStore.assignController(index, controller);
   closeConfigView(win, configViews, index);
   reloadView(index);
+});
+
+ipcMain.on('gamepad-connected', (e, { id, index }) => {
+  const slot = getControllerSlot(id);
+  if (slot == null) return;
+  if (controllerAssignments[slot] !== index) {
+    controllerAssignments[slot] = index;
+    profileStore.assignController(slot, index);
+    reloadView(slot);
+  }
 });
 
 ipcMain.on('select-audio', (_e, { index, deviceId }) => {

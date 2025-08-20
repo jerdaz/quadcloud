@@ -1,4 +1,4 @@
-const { isXboxHost, getGamepadPatch } = require('../lib/xcloud');
+const { isXboxHost, getGamepadPatch, getControllerSlot } = require('../lib/xcloud');
 
 describe('isXboxHost', () => {
   test('matches xbox.com and subdomains', () => {
@@ -16,5 +16,19 @@ describe('getGamepadPatch', () => {
   test('includes provided controller index', () => {
     const patch = getGamepadPatch(2);
     expect(patch).toContain('const myIndex = 2;');
+  });
+});
+
+describe('getControllerSlot', () => {
+  test('maps numbered controllers', () => {
+    expect(getControllerSlot('Xbox Controller 3')).toBe(2);
+  });
+
+  test('maps unnumbered controller to zero', () => {
+    expect(getControllerSlot('Xbox Controller')).toBe(0);
+  });
+
+  test('returns null for other names', () => {
+    expect(getControllerSlot('Generic Gamepad')).toBeNull();
   });
 });
