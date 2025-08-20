@@ -61,8 +61,8 @@ test('registers shortcut to open audio selection dialog', () => {
 });
 
 test('registers shortcut to auto-apply audio selection for all quadrants', () => {
-  const view1 = { webContents: { executeJavaScript: jest.fn() } };
-  const view2 = { webContents: { executeJavaScript: jest.fn() } };
+  const view1 = { webContents: { executeJavaScript: jest.fn(), controllerIndex: 0 } };
+  const view2 = { webContents: { executeJavaScript: jest.fn(), controllerIndex: 1 } };
   const views = [view1, view2];
   const toggleConfig = jest.fn();
   const callbacks = {};
