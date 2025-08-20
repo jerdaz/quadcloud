@@ -6,6 +6,7 @@ ipcRenderer.on('init', (_e, data) => {
   document.getElementById('profileName').value = data.name || '';
   fillProfiles(data.profiles, data.currentProfile);
   fillControllers(data.controllers, data.currentController);
+  document.getElementById('enabledChk').checked = data.enabled;
   enumerateAudio();
 });
 
@@ -49,6 +50,10 @@ document.getElementById('applyProfile').addEventListener('click', () => {
 
 document.getElementById('applyController').addEventListener('click', () => {
   ipcRenderer.send('select-controller', { index: viewIndex, controller: parseInt(document.getElementById('controllerSelect').value, 10) });
+});
+
+document.getElementById('applyEnabled').addEventListener('click', () => {
+  ipcRenderer.send('set-enabled', { index: viewIndex, enabled: document.getElementById('enabledChk').checked });
 });
 
 document.getElementById('newProfile').addEventListener('click', () => {

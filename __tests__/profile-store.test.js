@@ -40,4 +40,14 @@ describe('ProfileStore', () => {
     expect(store2.getAudio(0)).toBe('device-1');
   });
 
+  test('persists disabled state of quadrants', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'profiles-'));
+    const file = path.join(tmp, 'profiles.json');
+    const store1 = new ProfileStore(file);
+    store1.setDisabled(2, true);
+
+    const store2 = new ProfileStore(file);
+    expect(store2.isDisabled(2)).toBe(true);
+  });
+
 });
