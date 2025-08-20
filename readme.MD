@@ -57,7 +57,7 @@ To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, th
 
 Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, and choose a controller. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream.
 
-Additionally, when a headset is plugged into an Xbox controller (named 'Xbox Controller', 'Xbox Controller 2', etc.), the app automatically routes that quadrant's audio to the matching controller's headphone jack.
+Additionally, when a headset is plugged into an Xbox controller (named 'Xbox Controller', 'Xbox Controller 2', etc.), the app automatically routes that quadrant's audio to the matching controller's headphone jack, including at startup and whenever the stream reloads.
 
 ## Notes
 

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
 const ProfileStore = require('./lib/profile-store');
+const { buildAudioSinkScript } = require("./lib/audio-output");
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 
 app.commandLine.appendSwitch('disable-background-timer-throttling');
@@ -334,21 +335,7 @@ function reloadView(slot) {
 function applyAudioOutput(index, deviceId) {
   const view = views[index];
   if (!view) return;
-  const js = `
-    (async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
-          try { await navigator.mediaDevices.selectAudioOutput({ deviceId: '${deviceId}' }); } catch {}
-        }
-        const els = document.querySelectorAll('audio, video');
-        for (const el of els) {
-          if (typeof el.setSinkId === 'function') {
-            try { await el.setSinkId('${deviceId}'); } catch {}
-          }
-        }
-      } catch {}
-    })();
-  `;
+  const js = buildAudioSinkScript(deviceId);
   try { view.webContents.executeJavaScript(js); } catch {}
 }
 
