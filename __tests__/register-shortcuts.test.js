@@ -89,8 +89,10 @@ test('registers shortcut to auto-apply audio selection for all quadrants', () =>
   expect(js).toContain('enumerateDevices');
   expect(js).not.toContain('qc-audio-dialog');
   expect(js).not.toContain('apply.click');
+  expect(js).not.toContain('includes');
   expect(js).toContain('MutationObserver');
   expect(js).toContain("addEventListener('play'");
+  expect(js).toContain('default');
 });
 
 test('focus shortcut uses latest view reference', () => {
