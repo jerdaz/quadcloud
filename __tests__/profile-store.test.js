@@ -30,4 +30,14 @@ describe('ProfileStore', () => {
     expect(Object.keys(store2.getProfiles())).toHaveLength(6);
   });
 
+  test('persists audio device assignments', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'profiles-'));
+    const file = path.join(tmp, 'profiles.json');
+    const store1 = new ProfileStore(file);
+    store1.assignAudio(0, 'device-1');
+
+    const store2 = new ProfileStore(file);
+    expect(store2.getAudio(0)).toBe('device-1');
+  });
+
 });
