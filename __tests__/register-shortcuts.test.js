@@ -87,6 +87,8 @@ test('registers shortcut to auto-apply audio selection for all quadrants', () =>
   const script2 = view2.webContents.executeJavaScript.mock.calls[0][0];
   expect(script1).toContain('Xbox Controller');
   expect(script1).toContain('enumerateDevices');
+  expect(script1).toContain('MutationObserver');
+  expect(script1).toContain("addEventListener('play'");
   expect(script1).not.toContain('qc-audio-dialog');
   expect(script2).toContain('Xbox Controller 2');
   expect(script2).not.toContain('qc-audio-dialog');

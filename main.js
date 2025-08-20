@@ -344,12 +344,25 @@ function applyAudioOutput(index, deviceId) {
         if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
           try { await navigator.mediaDevices.selectAudioOutput({ deviceId: '${deviceId}' }); } catch {}
         }
-        const els = document.querySelectorAll('audio, video');
-        for (const el of els) {
+        const apply = async el => {
           if (typeof el.setSinkId === 'function') {
             try { await el.setSinkId('${deviceId}'); } catch {}
           }
-        }
+        };
+        const handle = el => {
+          apply(el);
+          el.addEventListener('play', () => apply(el), { once: true });
+        };
+        document.querySelectorAll('audio, video').forEach(handle);
+        new MutationObserver(muts => {
+          muts.forEach(m => m.addedNodes.forEach(n => {
+            if (n.tagName === 'VIDEO' || n.tagName === 'AUDIO') {
+              handle(n);
+            } else if (n.querySelectorAll) {
+              n.querySelectorAll('audio, video').forEach(handle);
+            }
+          }));
+        }).observe(document.body, { childList: true, subtree: true });
       } catch {}
     })();
   `;
