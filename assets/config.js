@@ -46,6 +46,9 @@ function fillAudio(devices) {
 
 async function enumerateAudio() {
   try {
+    if (navigator.mediaDevices?.selectAudioOutput) {
+      await navigator.mediaDevices.selectAudioOutput();
+    }
     const devices = await navigator.mediaDevices.enumerateDevices();
     fillAudio(devices.filter(d => d.kind === 'audiooutput'));
   } catch {
@@ -65,7 +68,9 @@ document.getElementById('applyController').addEventListener('click', () => {
   ipcRenderer.send('select-controller', { index: viewIndex, controller: parseInt(document.getElementById('controllerSelect').value, 10) });
 });
 
-document.getElementById('applyAudio').disabled = true;
+document.getElementById('applyAudio').addEventListener('click', () => {
+  ipcRenderer.send('select-audio', { index: viewIndex, deviceId: document.getElementById('audioSelect').value });
+});
 
 document.getElementById('newProfile').addEventListener('click', () => {
   ipcRenderer.send('create-profile', { index: viewIndex, name: document.getElementById('profileName').value });
