@@ -73,8 +73,7 @@ Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or
 - **Ctrl+Alt+4**: focus the bottom-right quadrant.
 - **Ctrl+Alt+I**: open developer tools for the focused view.
 - **Ctrl+S**: open the speaker selection dialog for the focused quadrant.
-- **Ctrl+A**: automatically apply the preferred audio device for all quadrants without showing a dialog.
-
+- **Ctrl+A**: automatically apply the preferred audio device for all quadrants without showing a dialog. Newly created video elements will also receive the selection when playback begins.
 ## Testing
 
 ```bash
