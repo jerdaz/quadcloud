@@ -20,6 +20,7 @@ let viewHeight = 0;
 let positions = [];
 
 const { allowMediaPermissions } = require('./lib/permissions');
+const { applyAudioOutput } = require('./lib/audio');
 
 
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
@@ -197,22 +198,6 @@ function installBetterXcloud(wc) {
   });
 }
 
-function applyAudioOutput(view, deviceId) {
-  if (!view || !deviceId) return;
-  const script = `
-    (async () => {
-      try { await navigator.mediaDevices.getUserMedia({audio:true}); } catch {}
-      const id = ${JSON.stringify(deviceId)};
-      const apply = el => { if (typeof el.setSinkId === 'function') { try { el.setSinkId(id); } catch {} } };
-      const setAll = () => document.querySelectorAll('audio,video').forEach(apply);
-      setAll();
-      new MutationObserver(m => m.forEach(r => r.addedNodes.forEach(n => {
-        if (n.tagName === 'AUDIO' || n.tagName === 'VIDEO') apply(n);
-      }))).observe(document.documentElement, {childList:true, subtree:true});
-    })();
-  `;
-  try { view.webContents.executeJavaScript(script, true); } catch {}
-}
 
 const URLs = [
   'https://xbox.com/play',
