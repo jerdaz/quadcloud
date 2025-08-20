@@ -268,7 +268,7 @@ function createWindow() {
     { x: 0,         y: viewHeight },
     { x: viewWidth, y: viewHeight }
   ];
-  positions.forEach((pos, i) => {
+positions.forEach((pos, i) => {
     let profileId = profileStore.getAssignment(i);
     if (!profileId) {
       profileId = profileStore.createProfile(`player${i + 1}`);
@@ -277,6 +277,10 @@ function createWindow() {
     const controller = profileStore.getController(i);
     controllerAssignments[i] = controller ?? controllerAssignments[i];
     profileStore.assignController(i, controllerAssignments[i]);
+    if (profileStore.isDisabled(i)) {
+      views[i] = null;
+      return;
+    }
     const view = createView(pos.x, pos.y, viewWidth, viewHeight, i, profileId, controllerAssignments[i]);
     win.addBrowserView(view);
     views[i] = view;
@@ -305,7 +309,8 @@ function gatherConfigData(index) {
     currentProfile: profileId,
     controllers: [0,1,2,3],
     currentController: controllerAssignments[index],
-    currentAudio: profileStore.getAudio(index)
+    currentAudio: profileStore.getAudio(index),
+    enabled: !profileStore.isDisabled(index)
   };
 }
 
@@ -388,6 +393,17 @@ ipcMain.on('select-audio', (_e, { index, deviceId }) => {
   profileStore.assignAudio(index, deviceId);
   closeConfigView(win, configViews, index);
   applyAudioOutput(index, deviceId);
+});
+
+ipcMain.on('set-enabled', (_e, { index, enabled }) => {
+  profileStore.setDisabled(index, !enabled);
+  closeConfigView(win, configViews, index);
+  if (enabled) {
+    reloadView(index);
+  } else {
+    destroyView(win, views[index]);
+    views[index] = null;
+  }
 });
 
 ipcMain.on('close-config', (_e, { index }) => {

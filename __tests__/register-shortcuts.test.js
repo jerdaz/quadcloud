@@ -59,3 +59,28 @@ test('registers shortcut to open audio selection dialog', () => {
   expect(webContents.getFocusedWebContents).toHaveBeenCalled();
   expect(executeJavaScript).toHaveBeenCalled();
 });
+
+test('focus shortcut uses latest view reference', () => {
+  const view1 = { webContents: { focus: jest.fn() } };
+  const views = [view1];
+  const toggleConfig = jest.fn();
+  const callbacks = {};
+
+  globalShortcut.register.mockClear();
+  globalShortcut.register.mockImplementation((accel, cb) => {
+    callbacks[accel] = cb;
+  });
+
+  registerShortcuts(views, toggleConfig);
+
+  // replace view after registration
+  const view2 = { webContents: { focus: jest.fn() } };
+  views[0] = view2;
+
+  // should focus the updated view without throwing if undefined
+  callbacks['CommandOrControl+Alt+1']();
+  expect(view2.webContents.focus).toHaveBeenCalled();
+
+  views[0] = null;
+  expect(() => callbacks['CommandOrControl+Alt+1']()).not.toThrow();
+});

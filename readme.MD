@@ -55,7 +55,7 @@ The app automatically splits the active display into four equal quadrants based 
 
 To avoid xCloud's "click to continue" overlay when a quadrant loses OS focus, the app spoofs focus in the main world of all `xbox.com` frames.
 
-Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, and choose a controller. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream.
+Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or switch profiles, create additional profiles beyond the default four, choose a controller, and enable or disable the quadrant. Disabling removes the quadrant's browser view but the setting persists across sessions. You can still open the panel later to re‑enable the quadrant. Selecting a different controller reloads the quadrant so the previous stream is terminated. Profile selections persist across sessions. Press Ctrl+S in a focused quadrant to choose its audio output device directly within the stream.
 
 ## Notes
 
