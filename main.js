@@ -416,7 +416,12 @@ ipcMain.on('close-config', (_e, { index }) => {
 app.whenReady().then(() => {
   profileStore = new ProfileStore(path.join(app.getPath('userData'), 'profiles.json'));
   createWindow();
-  registerShortcuts(views, toggleConfig, index => controllerAssignments[index]);
+  registerShortcuts(
+    views,
+    toggleConfig,
+    index => controllerAssignments[index],
+    index => profileStore.getAudio(index)
+  );
 });
 
 app.on('will-quit', () => {
