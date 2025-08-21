@@ -1,5 +1,6 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
 const registerShortcuts = require('./lib/register-shortcuts');
+const installAutoApplyCtrlA = require('./lib/auto-apply-ctrl-a');
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
@@ -239,6 +240,7 @@ function createView(x, y, width, height, slot, profileId, controllerIndex) {
   installXcloudFocusWorkaround(view.webContents);
   installGamepadIsolation(view.webContents, controllerIndex);
   installBetterXcloud(view.webContents);
+  installAutoApplyCtrlA(view.webContents, controllerIndex);
   const audioDevice = profileStore.getAudio(slot);
   if (audioDevice) {
     const apply = () => applyAudioOutput(slot, audioDevice);
