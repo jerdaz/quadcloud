@@ -58,6 +58,7 @@ test('registers shortcut to open audio selection dialog', () => {
 
   expect(webContents.getFocusedWebContents).toHaveBeenCalled();
   expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('Xbox Controller 2'));
+  expect(executeJavaScript.mock.calls[0][0]).toContain("overlay.style.display = 'flex'");
 });
 
 test('registers shortcut to auto-confirm audio dialog for all quadrants', () => {
@@ -87,8 +88,10 @@ test('registers shortcut to auto-confirm audio dialog for all quadrants', () => 
   const script2 = view2.webContents.executeJavaScript.mock.calls[0][0];
   expect(script1).toContain('Xbox Controller');
   expect(script1).toContain('qc-audio-dialog');
+  expect(script1).toContain("overlay.style.display = 'none'");
   expect(script1).toContain('apply.click');
   expect(script2).toContain('Xbox Controller 2');
+  expect(script2).toContain("overlay.style.display = 'none'");
   expect(script2).toContain('apply.click');
 });
 
