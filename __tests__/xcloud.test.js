@@ -1,9 +1,11 @@
 const { isXboxHost, getGamepadPatch } = require('../lib/xcloud');
 
 describe('isXboxHost', () => {
-  test('matches xbox.com and subdomains', () => {
+  test('matches xbox and related hosts', () => {
     expect(isXboxHost('xbox.com')).toBe(true);
     expect(isXboxHost('sub.xbox.com')).toBe(true);
+    expect(isXboxHost('foo.xboxlive.com')).toBe(true);
+    expect(isXboxHost('bar.cloudapp.azureedge.net')).toBe(true);
   });
 
   test('rejects non xbox hosts', () => {
