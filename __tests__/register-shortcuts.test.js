@@ -6,6 +6,7 @@ jest.mock('electron', () => ({
 
 const registerShortcuts = require('../lib/register-shortcuts');
 const { globalShortcut, webContents } = require('electron');
+const { applyAudioAll } = require('../lib/register-shortcuts');
 
 test('registers shortcut to open developer tools', () => {
   const views = [];
@@ -93,6 +94,19 @@ test('registers shortcut to auto-confirm audio dialog for all quadrants', () => 
   expect(script2).toContain('Xbox Controller 2');
   expect(script2).toContain("overlay.style.display = 'none'");
   expect(script2).toContain('apply.click');
+});
+
+test('applyAudioAll applies audio selection across views', () => {
+  const view1 = { webContents: { executeJavaScript: jest.fn() } };
+  const view2 = { webContents: { executeJavaScript: jest.fn() } };
+  const getController = jest.fn().mockImplementation(i => i);
+
+  applyAudioAll([view1, view2], getController);
+
+  expect(view1.webContents.executeJavaScript).toHaveBeenCalled();
+  expect(view2.webContents.executeJavaScript).toHaveBeenCalled();
+  const script = view1.webContents.executeJavaScript.mock.calls[0][0];
+  expect(script).toContain("overlay.style.display = 'none'");
 });
 
 test('focus shortcut uses latest view reference', () => {

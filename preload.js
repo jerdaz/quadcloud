@@ -1,3 +1,5 @@
+const { ipcRenderer } = require('electron');
+
 let hideCursorTimeout;
 
 function resetCursorTimeout() {
@@ -8,6 +10,12 @@ function resetCursorTimeout() {
   hideCursorTimeout = setTimeout(() => {
     body.style.cursor = 'none';
   }, 5000);
+}
+
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    ipcRenderer.send('audio-devices-changed');
+  });
 }
 
 window.addEventListener('mousemove', resetCursorTimeout);

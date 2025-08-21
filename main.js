@@ -1,5 +1,7 @@
 const { app, BrowserWindow, BrowserView, session, screen, globalShortcut, ipcMain } = require('electron');
-const registerShortcuts = require('./lib/register-shortcuts');
+const shortcuts = require('./lib/register-shortcuts');
+const registerShortcuts = shortcuts;
+const { applyAudioAll } = shortcuts;
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
@@ -396,6 +398,10 @@ ipcMain.on('select-audio', (_e, { index, deviceId }) => {
   profileStore.assignAudio(index, deviceId);
   closeConfigView(win, configViews, index);
   applyAudioOutput(index, deviceId);
+});
+
+ipcMain.on('audio-devices-changed', () => {
+  applyAudioAll(views, i => controllerAssignments[i]);
 });
 
 ipcMain.on('set-enabled', (_e, { index, enabled }) => {
