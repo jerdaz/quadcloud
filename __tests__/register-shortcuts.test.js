@@ -5,6 +5,7 @@ jest.mock('electron', () => ({
 }));
 
 const registerShortcuts = require('../lib/register-shortcuts');
+const { audioDialogJS } = require('../lib/register-shortcuts');
 const { globalShortcut, webContents } = require('electron');
 
 test('registers shortcut to open developer tools', () => {
@@ -118,4 +119,10 @@ test('focus shortcut uses latest view reference', () => {
 
   views[0] = null;
   expect(() => callbacks['CommandOrControl+Alt+1']()).not.toThrow();
+});
+
+test('audioDialogJS falls back to default device when no match', () => {
+  const script = audioDialogJS('NoMatch', true);
+  expect(script).toContain('defaultId');
+  expect(script).toContain('!hasTarget && defaultId');
 });

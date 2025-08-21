@@ -24,4 +24,6 @@ test('applies ctrl-a script on media start and sets up mutation observer', () =>
   const injected = wc.executeJavaScript.mock.calls[0][0];
   expect(injected).toContain('MutationObserver');
   expect(injected).toContain('AUDIO_JS');
+  expect(injected).toContain('navigator.mediaDevices.addEventListener');
+  expect(injected).toMatch(/apply\(\);/);
 });
