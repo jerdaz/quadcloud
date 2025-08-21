@@ -86,10 +86,10 @@ test('registers shortcut to auto-confirm audio dialog for all quadrants', () => 
   const script1 = view1.webContents.executeJavaScript.mock.calls[0][0];
   const script2 = view2.webContents.executeJavaScript.mock.calls[0][0];
   expect(script1).toContain('Xbox Controller');
-  expect(script1).toContain('qc-audio-dialog');
-  expect(script1).toContain('apply.click');
+  expect(script1).toContain('enumerateDevices');
+  expect(script1).not.toContain('qc-audio-dialog');
   expect(script2).toContain('Xbox Controller 2');
-  expect(script2).toContain('apply.click');
+  expect(script2).not.toContain('qc-audio-dialog');
 });
 
 test('focus shortcut uses latest view reference', () => {
