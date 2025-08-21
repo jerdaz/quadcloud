@@ -1,3 +1,6 @@
+const { applyXcloudFocusPatch } = require('./lib/focus-spoof');
+applyXcloudFocusPatch();
+
 let hideCursorTimeout;
 
 function resetCursorTimeout() {
