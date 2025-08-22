@@ -1,3 +1,15 @@
+const { FOCUS_SPOOF_SOURCE } = require('./lib/focus-spoof');
+
+// Inject focus/visibility spoof into the main world at document_start
+(function injectFocusSpoof() {
+  try {
+    const script = document.createElement('script');
+    script.textContent = FOCUS_SPOOF_SOURCE;
+    (document.documentElement || document.head).appendChild(script);
+    script.remove();
+  } catch {}
+})();
+
 let hideCursorTimeout;
 
 function resetCursorTimeout() {

@@ -4,6 +4,7 @@ const installAutoApplyCtrlA = require('./lib/auto-apply-ctrl-a');
 const path = require('path');
 const fs = require('fs');
 const { XBOX_HOST_RE, getGamepadPatch } = require('./lib/xcloud');
+const { FOCUS_SPOOF_SOURCE } = require('./lib/focus-spoof');
 const ProfileStore = require('./lib/profile-store');
 const { destroyView, closeConfigView } = require('./lib/view-utils');
 const setMaxListeners = require('./lib/set-max-listeners');
@@ -22,67 +23,10 @@ let viewWidth = 0;
 let viewHeight = 0;
 let positions = [];
 
-
 // --- xCloud focus/visibility spoof: inject into MAIN WORLD + all frames ---
 
-const XFOCUS_PATCH = `
-(() => {
-  const docProto = Document.prototype;
-  try { Object.defineProperty(docProto, 'hidden', {configurable:true, get(){return false}}) } catch {}
-  try { Object.defineProperty(docProto, 'webkitHidden', {configurable:true, get(){return false}}) } catch {}
-  try { Object.defineProperty(docProto, 'visibilityState', {configurable:true, get(){return 'visible'}}) } catch {}
-  try {
-    Object.defineProperty(docProto, 'hasFocus', {
-      configurable: true,
-      value: function(){ return true; }
-    });
-  } catch {}
+const XFOCUS_PATCH = FOCUS_SPOOF_SOURCE;
 
-  // Swallow visibilitychange/blur on window + document
-  const wAdd = window.addEventListener.bind(window);
-  window.addEventListener = function(type, listener, opts){
-    if (type === 'blur' || type === 'visibilitychange') {
-      // swallow
-      return wAdd(type, () => {}, opts);
-    }
-    return wAdd(type, listener, opts);
-  };
-  const dAdd = Document.prototype.addEventListener.bind(document);
-  Document.prototype.addEventListener = function(type, listener, opts){
-    if (type === 'visibilitychange') {
-      return dAdd.call(this, type, () => {}, opts);
-    }
-    return dAdd.call(this, type, listener, opts);
-  };
-
-  // Periodic focus events
-  const fireFocus = () => {
-    try { window.dispatchEvent(new Event('focus')); } catch {}
-    try { document.dispatchEvent(new Event('focus')); } catch {}
-  };
-  fireFocus();
-  setInterval(fireFocus, 5000);
-
-  // Attempt to dismiss focus overlays
-  const tryDismiss = () => {
-    const root = document;
-    const sel = [
-      'button', '[role=button]',
-      '[data-testid*="activate" i]', '[aria-label*="activate" i]',
-      '[aria-label*="focus" i]'
-    ].join(',');
-    for (const el of root.querySelectorAll(sel)) {
-      const txt = (el.innerText || el.textContent || '').toLowerCase();
-      if (/(click|klik).*here|hier|activate|activeren|focus/.test(txt)) {
-        try { el.click(); return; } catch {}
-      }
-    }
-  };
-  tryDismiss();
-  const mo = new MutationObserver(tryDismiss);
-  mo.observe(document.documentElement, { childList:true, subtree:true });
-})()
-`;
 
 function injectPatchIntoFrame(frame) {
   try {
