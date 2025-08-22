@@ -1,4 +1,4 @@
-const { isXboxHost, getGamepadPatch } = require('../lib/xcloud');
+const { isXboxHost, getGamepadPatch, getFocusPatch } = require('../lib/xcloud');
 
 describe('isXboxHost', () => {
   test('matches xbox.com and subdomains', () => {
@@ -16,5 +16,13 @@ describe('getGamepadPatch', () => {
   test('includes provided controller index', () => {
     const patch = getGamepadPatch(2);
     expect(patch).toContain('const myIndex = 2;');
+  });
+});
+
+describe('getFocusPatch', () => {
+  test('spoofs focus-related properties', () => {
+    const patch = getFocusPatch();
+    expect(patch).toContain("document.dispatchEvent(new Event('focus'))");
+    expect(patch).toContain('visibilityState');
   });
 });
