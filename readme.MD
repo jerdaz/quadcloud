@@ -59,6 +59,7 @@ Each quadrant exposes a configuration panel (Ctrl+1–4) where you can rename or
 
 - Works on Windows and Linux.
 - Some streaming services that read controllers directly from the OS may require additional tools for full isolation.
+- Each quadrant keeps the interface focused so selection outlines stay visible even without OS focus.
 
 ## Hotkeys
 
