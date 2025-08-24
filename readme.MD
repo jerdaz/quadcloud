@@ -2,6 +2,8 @@
 
 Electron app that splits the display into four isolated browser sessions for xCloud or Remote Play. Each view scales to half of the screen's width and height—for example, on a 4K screen each view is 1080p, and on a 1080p screen each view is 540p. Every view uses its own persistent profile and only listens to a single controller.
 
+The app patches xCloud so the currently selected tile always has a visible outline, even when the OS or browser focus is elsewhere, ensuring you can see which game is highlighted while navigating with a gamepad.
+
 ## Windows setup
 
 1. **Install Node.js** – download the LTS version from [nodejs.org](https://nodejs.org) and run the installer.

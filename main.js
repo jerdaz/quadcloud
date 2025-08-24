@@ -81,6 +81,51 @@ const XFOCUS_PATCH = `
   tryDismiss();
   const mo = new MutationObserver(tryDismiss);
   mo.observe(document.documentElement, { childList:true, subtree:true });
+
+  (() => {
+    const STYLE_ID = 'gp-focus-overlay-style';
+    const ACTIVE_CLASS = 'gp-active';
+
+    // Style toevoegen (een custom kader via pseudo-element)
+    if (!document.getElementById(STYLE_ID)) {
+      const style = document.createElement('style');
+      style.id = STYLE_ID;
+      style.textContent = \`
+        .\${ACTIVE_CLASS} {
+          position: relative !important;
+        }
+        .\${ACTIVE_CLASS}::after {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border: 3px solid #00d1ff;
+          border-radius: 12px;
+          pointer-events: none;
+          box-shadow: 0 0 8px rgba(0,209,255,.5);
+        }
+      \`;
+      document.head.appendChild(style);
+    }
+
+    const origFocus = HTMLElement.prototype.focus;
+    let last = null;
+
+    HTMLElement.prototype.focus = function(...args) {
+      // oude highlight weghalen
+      if (last && last !== this) {
+        last.classList.remove(ACTIVE_CLASS);
+      }
+
+      // dit element markeren
+      this.classList.add(ACTIVE_CLASS);
+      last = this;
+
+      // native focus wel uitvoeren (anders breek je keyboard input)
+      return origFocus.apply(this, args);
+    };
+
+    console.log("✅ .focus() gepatched: actieve tile krijgt altijd overlay.");
+  })();
 })()
 `;
 
